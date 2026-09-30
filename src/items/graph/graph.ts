@@ -560,12 +560,12 @@ export const graphType: ItemType<GraphItem, GraphParts, GraphView> = {
     }
   },
 
-  arrange(parts, item, { labelSize, iconSize }) {
+  arrange(parts, item, { nameSize, iconSize }) {
     // The graph may take the configured share of the cell, but never the room
     // the text above it needs.
     const head =
       item.graph_layout === 'split'
-        ? 10 + Math.max(iconSize * 0.8, labelSize * 1.2 + 2 + (labelSize - 2) * 1.2) + 6
+        ? 10 + Math.max(iconSize * 0.8, nameSize * 1.2 + 2 + (nameSize - 2) * 1.2) + 6
         : 0;
     parts.root.style.setProperty('--tsr-graph-head', `${Math.round(head)}px`);
   },

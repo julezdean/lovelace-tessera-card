@@ -7,7 +7,15 @@ import type { ItemType } from '../items/item-type';
 import { DEFAULT_TYPE, getItemType, itemTypes } from '../items/registry';
 import type { Dict, HomeAssistant } from '../types';
 import { CONDITIONS_TAG, ensureConditionsEditor, ensureYamlEditor, YAML_TAG } from './loaders';
-import { ANIMATION_SCHEMA, LABELS, LAYOUT_SELECT, PRESS_EFFECT_SELECT, select } from './schema';
+import {
+  ANIMATION_SCHEMA,
+  LABELS,
+  LAYOUT_SELECT,
+  PRESS_EFFECT_SELECT,
+  SHOW_ICON_FIELD,
+  SIZE_FIELDS,
+  select,
+} from './schema';
 import { EDITOR_STYLES } from './styles';
 import { cardFormData, cardFormToConfig } from './card-form';
 import { mergeOwnedKeys } from './transform';
@@ -81,11 +89,11 @@ const cardSchema = (mode: string) => [
     icon: 'mdi:view-dashboard-outline',
     schema: [
       { name: 'radius', selector: { number: { min: 0, max: 60, mode: 'box' } } },
-      { name: 'label_size', selector: { number: { min: 8, max: 32, mode: 'slider' } } },
-      { name: 'icon_size', selector: { number: { min: 12, max: 96, mode: 'slider' } } },
+      ...SIZE_FIELDS,
       { name: 'icon_color', selector: { text: {} } },
       { name: 'active_color', selector: { text: {} } },
       { name: 'show_name', selector: { boolean: {} } },
+      SHOW_ICON_FIELD,
       PRESS_EFFECT_SELECT,
       // Only buttons arrange icon and text either way; it is stored under
       // `button:`, but belongs with the rest of how an item looks.
@@ -112,6 +120,10 @@ const SHARED_KEYS = [
   'icon',
   'label',
   'show_name',
+  'show_icon',
+  'name_size',
+  'name_weight',
+  'label_weight',
   'colspan',
   'size',
   'visibility',

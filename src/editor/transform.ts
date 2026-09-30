@@ -82,13 +82,25 @@ export function cellToForm(item: Dict, inherited: Dict): Dict {
   };
   return {
     icon_size: size('icon_size'),
+    name_size: size('name_size'),
+    name_weight: size('name_weight'),
     label_size: size('label_size'),
+    label_weight: size('label_weight'),
     icon_color: item.icon_color ?? '',
+    show_icon: item.show_icon ?? inherited.show_icon ?? true,
   };
 }
 
 export function cellFromForm(value: Dict): Dict {
-  return { icon_size: value.icon_size, label_size: value.label_size, icon_color: value.icon_color };
+  return {
+    icon_size: value.icon_size,
+    name_size: value.name_size,
+    name_weight: value.name_weight,
+    label_size: value.label_size,
+    label_weight: value.label_weight,
+    icon_color: value.icon_color,
+    show_icon: value.show_icon,
+  };
 }
 
 export function cellDefaults(inherited: Dict): Dict {
@@ -98,8 +110,12 @@ export function cellDefaults(inherited: Dict): Dict {
   };
   return {
     icon_size: size('icon_size'),
+    name_size: size('name_size'),
+    name_weight: size('name_weight'),
     label_size: size('label_size'),
+    label_weight: size('label_weight'),
     icon_color: inherited.icon_color ?? undefined,
+    show_icon: inherited.show_icon ?? true,
   };
 }
 

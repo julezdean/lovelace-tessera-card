@@ -36,10 +36,14 @@ export const DEFAULT_ITEM: Dict = {
   active_background: null,
   color: null,
   active_color: null,
+  name_size: null,
+  name_weight: null,
   label_size: null,
+  label_weight: null,
   icon_size: null,
   icon_color: null,
   show_name: true,
+  show_icon: true,
   press_effect: 'scale', // scale | fade | none
 };
 
@@ -55,6 +59,7 @@ const ITEM_TEMPLATED_FIELDS = [
   'style',
   'active_when',
   'show_drawing',
+  'show_icon',
 ];
 
 /**
@@ -145,7 +150,11 @@ function normalizeItem(
     active_background: src.active_background ?? defaults.active_background,
     color: src.color ?? defaults.color,
     active_color: src.active_color ?? src.color ?? defaults.active_color,
+    name_size: src.name_size ?? defaults.name_size,
+    name_weight: src.name_weight ?? defaults.name_weight,
     label_size: src.label_size ?? defaults.label_size,
+    label_weight: src.label_weight ?? defaults.label_weight,
+    show_icon: src.show_icon ?? defaults.show_icon,
     icon_size: src.icon_size ?? defaults.icon_size,
     icon_color: src.icon_color ?? defaults.icon_color,
     press_effect: (src.press_effect ?? defaults.press_effect) as string,

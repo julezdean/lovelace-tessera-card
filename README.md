@@ -76,7 +76,7 @@ Adding it by hand instead:
    - Type: **JavaScript module**
 3. Reload the browser
 
-Confirm it loaded: the browser console prints `tessera-card v1.0.0` on
+Confirm it loaded: the browser console prints `tessera-card v1.1.0` on
 startup.
 
 ---
@@ -334,10 +334,14 @@ items. A type's own defaults block (`button:`) may set them too and wins over
 | `background` | CSS colour | subtle overlay | Inactive background |
 | `active_background` | CSS colour | slightly brighter | Active background |
 | `active_color` | CSS colour | `--state-active-color` | Accent for icon and outline |
-| `label_size` | number \| string | derived from height | Fixed size of the name |
+| `name_size` | number \| string | derived from height | Size of the name |
+| `name_weight` | number | `550` | Weight of the name, 100–900 |
+| `label_size` | number \| string | 2 px under the name | Size of the line under the name: the state, a value, a `label` |
+| `label_weight` | number | `400` | Weight of that line, 100–900 |
 | `icon_size` | number \| string | derived from height | Fixed size of the icon |
 | `icon_color` | CSS colour | secondary text | Inactive icon colour |
 | `show_name` | boolean | `true` | Show the name line |
+| `show_icon` | boolean | `true` | Show the icon. Without it the icon's room goes too, and the text moves to the middle |
 | `press_effect` | `scale` \| `fade` \| `none` | `scale` | Touch feedback |
 
 `button:` may carry them too, and wins over `item:` for buttons. The visual
@@ -1078,7 +1082,8 @@ text), `theme` and `opaque`
 one), `constrained` (how the
 card behaves in a sections grid cell), `colspan` (both layout modes with the
 measured widths printed, so the span arithmetic is checkable), `visibility`, `compact`, `animations`,
-`editor`, `progress` (the four progress types at three cell sizes, on a fixed
+`typography` (name and second line sized and weighted, the icon left out, with
+the computed values printed), `editor`, `progress` (the four progress types at three cell sizes, on a fixed
 clock), `graph` (both arrangements, on a computed history), `drawing`
 (`show_drawing` and `active_when`, timer running and idle) and `tick` (a countdown on the real clock, with a log of what it shows
 and how often it writes to the DOM).

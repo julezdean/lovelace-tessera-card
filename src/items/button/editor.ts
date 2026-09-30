@@ -4,18 +4,21 @@ import {
   ACTIVE_WHEN_FIELD,
   ANIMATION_SCHEMA,
   LAYOUT_SELECT,
+  SHOW_ICON_FIELD,
   SIZE_FIELDS,
 } from '../../editor/schema';
 import {
   actionFromForm,
   actionToForm,
+  cellDefaults,
+  cellFromForm,
+  cellToForm,
   confirmationFromConfig,
   pruneDefaults,
   triStateFromForm,
   triStateToForm,
 } from '../../editor/transform';
 import type { Dict } from '../../types';
-import { toNumber } from '../../utils';
 import type { EditorContext, ItemEditor } from '../item-type';
 
 /** One button's options, shown on its own page. */
@@ -34,6 +37,7 @@ const BUTTON_SCHEMA = [
     schema: [
       LAYOUT_SELECT,
       { name: 'show_name', selector: { boolean: {} } },
+      SHOW_ICON_FIELD,
       {
         name: 'show_state',
         selector: {
@@ -91,6 +95,10 @@ export const BUTTON_FORM_KEYS = [
   'background',
   'active_background',
   'show_name',
+  'show_icon',
+  'name_size',
+  'name_weight',
+  'label_weight',
   'show_state',
   'tap_action',
   'hold_action',
@@ -121,8 +129,7 @@ export const buttonEditor: ItemEditor = {
       colspan: button.colspan ?? 1,
       label: button.label ?? '',
       state_display: button.state_display ?? '',
-      icon_size: toNumber(button.icon_size ?? defaults.icon_size, undefined),
-      label_size: toNumber(button.label_size ?? defaults.label_size, undefined),
+      ...cellToForm(button, defaults),
       icon_color: button.icon_color ?? '',
       active_color: button.active_color ?? '',
       background: button.background ?? '',
@@ -156,8 +163,7 @@ export const buttonEditor: ItemEditor = {
         colspan: value.colspan,
         label: value.label,
         state_display: value.state_display,
-        icon_size: value.icon_size,
-        label_size: value.label_size,
+        ...cellFromForm(value),
         icon_color: value.icon_color,
         active_color: value.active_color,
         background: value.background,
@@ -189,8 +195,7 @@ export const buttonEditor: ItemEditor = {
         show_name: true,
         show_state: 'auto',
         layout: defaults.layout ?? 'vertical',
-        icon_size: toNumber(defaults.icon_size, undefined),
-        label_size: toNumber(defaults.label_size, undefined),
+        ...cellDefaults(defaults),
         icon_color: defaults.icon_color,
         active_color: defaults.active_color,
         // Inherited from the card, so only a genuine deviation is written out.

@@ -1,6 +1,6 @@
 {
   "name": "lovelace-tessera-card",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Buttons, countdowns, progress rings and graphs in one mosaic grid for Home Assistant, tuned for wall-mounted dashboards",
   "type": "module",
   "repository": {

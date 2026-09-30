@@ -10,7 +10,7 @@ import {
   PRESS_FLASH_MS,
 } from '../const';
 import { haptic, performAction } from '../core/actions';
-import { activeWhen } from '../core/active';
+import { activeWhen, truthy } from '../core/active';
 import { actionFor, confirmStep } from '../core/confirm';
 import {
   computeCellHeight,
@@ -50,11 +50,11 @@ const STYLES =
  * state are taken. Never smaller than the icon it replaces, and never so large
  * that a cell becomes all ring.
  */
-export function computeVisualSize(cellHeight: number, iconSize: number, labelSize: number): number {
+export function computeVisualSize(cellHeight: number, iconSize: number, nameSize: number): number {
   const padding = 20; // .btn padding, top and bottom
   const gap = 8; // .btn gap between icon and labels
-  const name = labelSize * 1.2;
-  const state = (labelSize - 2) * 1.2 + 2; // line plus the labels' gap
+  const name = nameSize * 1.2;
+  const state = (nameSize - 2) * 1.2 + 2; // line plus the labels' gap
   const room = cellHeight - padding - gap - name - state;
   return Math.round(clamp(room, iconSize, cellHeight * 0.62));
 }
@@ -137,7 +137,7 @@ export class TesseraCard extends BaseElement {
     columns: 1,
     gap: 0,
     iconSize: 30,
-    labelSize: 14,
+    nameSize: 14,
   };
 
   constructor() {
@@ -374,8 +374,11 @@ export class TesseraCard extends BaseElement {
     // Templated colours are applied per sync instead, since their value
     // depends on state that only exists at that point.
     if (!item.hasTemplates) this._applyColours(el, item);
+    if (item.name_size) el.style.setProperty('--tsr-name-size', cssLength(item.name_size, '14px'));
     if (item.label_size)
-      el.style.setProperty('--tsr-label-size', cssLength(item.label_size, '14px'));
+      el.style.setProperty('--tsr-label-size', cssLength(item.label_size, '12px'));
+    if (item.name_weight) el.style.setProperty('--tsr-name-weight', String(item.name_weight));
+    if (item.label_weight) el.style.setProperty('--tsr-label-weight', String(item.label_weight));
     if (item.icon_size) el.style.setProperty('--tsr-icon-size', cssLength(item.icon_size, '30px'));
 
     const itemType = getItemType(item.type);
@@ -487,10 +490,10 @@ export class TesseraCard extends BaseElement {
     );
     // Icon and label scale with the cell, within sane bounds.
     const iconSize = clamp(Math.round(cellHeight * 0.3), 24, 44);
-    const labelSize = clamp(Math.round(cellHeight * 0.115), 12, 17);
+    const nameSize = clamp(Math.round(cellHeight * 0.115), 12, 17);
     this._gridEl.style.setProperty('--tsr-icon-size', `${iconSize}px`);
-    this._gridEl.style.setProperty('--tsr-label-size', `${labelSize}px`);
-    const visualSize = computeVisualSize(cellHeight, iconSize, labelSize);
+    this._gridEl.style.setProperty('--tsr-name-size', `${nameSize}px`);
+    const visualSize = computeVisualSize(cellHeight, iconSize, nameSize);
     this._gridEl.style.setProperty('--tsr-visual-size', `${visualSize}px`);
 
     // Rebuild the row containers and re-home the (already existing) cells.
@@ -538,7 +541,7 @@ export class TesseraCard extends BaseElement {
       columns,
       gap,
       iconSize,
-      labelSize,
+      nameSize,
     };
     this._cells.forEach((cell, index) => {
       const item = items[index];
@@ -798,6 +801,7 @@ export class TesseraCard extends BaseElement {
     const { root } = cell.parts;
 
     root.classList.toggle('active', sync.active);
+    root.classList.toggle('no-icon', !truthy(sync.resolve(item.show_icon) ?? true));
     root.classList.toggle('unavailable', sync.unavailable && !sync.missing);
     root.classList.toggle('invalid', sync.missing || !!item.error);
 

@@ -99,8 +99,14 @@ export const SHOW_DRAWING_FIELD = {
 /** How large an item's icon and name are - every type has both. */
 export const SIZE_FIELDS = [
   { name: 'icon_size', selector: { number: { min: 12, max: 96, mode: 'slider' } } },
+  { name: 'name_size', selector: { number: { min: 8, max: 40, mode: 'slider' } } },
+  { name: 'name_weight', selector: { number: { min: 100, max: 900, step: 100, mode: 'slider' } } },
   { name: 'label_size', selector: { number: { min: 8, max: 32, mode: 'slider' } } },
+  { name: 'label_weight', selector: { number: { min: 100, max: 900, step: 100, mode: 'slider' } } },
 ];
+
+/** Whether the icon is shown, next to show_name in every type's display section. */
+export const SHOW_ICON_FIELD = { name: 'show_icon', selector: { boolean: {} } };
 
 export const ICON_COLOR_FIELD = { name: 'icon_color', selector: { text: {} } };
 
@@ -126,7 +132,11 @@ export const LABELS: Record<string, string> = {
   active_color: 'Accent colour',
   icon_color: 'Icon colour',
   icon_size: 'Icon size (px)',
-  label_size: 'Label size (px)',
+  name_size: 'Name size (px)',
+  name_weight: 'Name weight',
+  label_size: 'Second line size (px)',
+  label_weight: 'Second line weight',
+  show_icon: 'Show icon',
   show_name: 'Show name',
   show_state: 'Show state',
   press_effect: 'Press effect',

@@ -2,10 +2,11 @@ import { VALID_ANIMATIONS } from '../../core/animation';
 import {
   ACTIONS_SECTION,
   ACTIVE_WHEN_FIELD,
-  select,
-  SHOW_DRAWING_FIELD,
-  SIZE_FIELDS,
   ICON_COLOR_FIELD,
+  SHOW_DRAWING_FIELD,
+  SHOW_ICON_FIELD,
+  SIZE_FIELDS,
+  select,
 } from '../../editor/schema';
 import {
   actionFromForm,
@@ -124,6 +125,7 @@ function schema(type: ProgressItem['type']): unknown[] {
         SHOW_DRAWING_FIELD,
         ...SIZE_FIELDS,
         { name: 'show_name', selector: { boolean: {} } },
+        SHOW_ICON_FIELD,
         { name: 'label', selector: { text: {} } },
       ],
     },
@@ -220,6 +222,10 @@ const FORM_KEYS = [
   'track',
   'gradient',
   'show_name',
+  'show_icon',
+  'name_size',
+  'name_weight',
+  'label_weight',
   'label',
   'format',
   'on_complete',

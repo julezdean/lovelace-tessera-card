@@ -290,6 +290,15 @@
   </div>
 </div>
 
+<!-- Scene: development only - name and second line sized and weighted, the icon left out -->
+<div class="scene" id="scene-typography">
+  <div class="strip">
+    <div class="col" style="width: 480px"><p class="caption">Defaults</p><div id="type-default"></div></div>
+    <div class="col" style="width: 480px"><p class="caption">name 20/700, second line 11/600, no icon</p><div id="type-set"></div></div>
+  </div>
+  <pre id="type-out"></pre>
+</div>
+
 <!-- Scene: development only - a countdown on the real clock, sampled -->
 <div class="scene" id="scene-tick">
   <div class="frame" style="width: 480px"><div id="tick-host"></div></div>
@@ -688,6 +697,29 @@ const SCENES = {
       col.appendChild(host);
       card({ items: BUTTON_POOL.slice(0, count).map((b) => ({ ...b })) }, host);
     }
+  },
+
+  typography() {
+    Date.now = () => NOW;
+    const items = [
+      { name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'light.wohnzimmer' },
+      { type: 'ring', entity: 'timer.kaffee', icon: 'mdi:coffee' },
+      { type: 'bar', entity: 'sensor.handy_akku', icon: 'mdi:cellphone' },
+    ];
+    const a = card({ items }, document.getElementById('type-default'));
+    const b = card({ item: { name_size: 20, name_weight: 700, label_size: 11, label_weight: 600, show_icon: false }, items },
+      document.getElementById('type-set'));
+    setTimeout(() => {
+      const report = (el, label) => [...el.shadowRoot.querySelectorAll('.btn')].map((btn) => {
+        const name = getComputedStyle(btn.querySelector('.name'));
+        const state = getComputedStyle(btn.querySelector('.state'));
+        const icon = btn.querySelector('.icon, .inner-icon');
+        // On screen, not by its own display: a hidden parent hides it too.
+        const iconShown = icon ? icon.getBoundingClientRect().height > 0 : false;
+        return `${label} ${btn.dataset.type}: name ${name.fontSize}/${name.fontWeight}, second line ${state.fontSize}/${state.fontWeight}, icon ${iconShown ? 'shown' : 'hidden'}`;
+      }).join('\n');
+      document.getElementById('type-out').textContent = report(a, 'default') + '\n' + report(b, 'set');
+    }, 200);
   },
 
   drawing() {

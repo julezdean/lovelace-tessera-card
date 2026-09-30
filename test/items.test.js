@@ -124,3 +124,33 @@ test('an untouched card page writes nothing', () => {
   const next = cardFormToConfig(config, cardFormData(config));
   assert.deepEqual(next, config);
 });
+
+test('name and second line have their own size and weight, and the icon can be left out', () => {
+  const config = normalizeConfig({
+    item: { name_size: 18, name_weight: 700, label_size: 11, label_weight: 500, show_icon: false },
+    items: [{ entity: 'light.a' }, { type: 'ring', entity: 'timer.a' }, { type: 'graph', entity: 'sensor.a' }],
+  });
+  for (const it of config.items) {
+    assert.equal(it.name_size, 18, it.type);
+    assert.equal(it.name_weight, 700, it.type);
+    assert.equal(it.label_size, 11, it.type);
+    assert.equal(it.label_weight, 500, it.type);
+    assert.equal(it.show_icon, false, it.type);
+  }
+});
+
+test('by default the icon is shown and nothing is sized by hand', () => {
+  const it = normalizeConfig({ items: [{}] }).items[0];
+  assert.equal(it.show_icon, true);
+  assert.equal(it.name_size, null);
+  assert.equal(it.label_size, null);
+});
+
+test('the item section edits all of them, and an untouched one writes nothing', () => {
+  const config = { type: `custom:${CARD_TAG}`, item: { name_size: 16, label_weight: 600 }, items: [{}] };
+  const data = cardFormData(config);
+  assert.equal(data.item.name_size, 16);
+  assert.equal(data.item.label_weight, 600);
+  assert.equal(data.item.show_icon, true);
+  assert.deepEqual(cardFormToConfig(config, data).item, { name_size: 16, label_weight: 600 });
+});

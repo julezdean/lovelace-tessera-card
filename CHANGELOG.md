@@ -6,6 +6,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-30
+
+### Changed
+
+- **`label_size` now sizes the line under the name** - the state, a value or
+  a `label` - and no longer the name itself; the name has `name_size`. The
+  key now means what its name says, matching `name` and `label`. A config
+  that set `label_size` for the name needs `name_size` instead. This changes
+  the meaning of a 1.0.0 key, which would call for a major version; it is a
+  minor one because the card has no other users yet.
+
+### Added
+
+- `name_size`, and `name_weight` and `label_weight` (100-900), for every
+  item type - in `item:`, a type's block or on the item.
+- `show_icon: false` leaves the icon out, and its room with it: name and
+  state line move to the middle of the cell.
+
 ## [1.0.0] - 2026-09-30
 
 The first release of Tessera Card: buttons, countdowns, progress rings and

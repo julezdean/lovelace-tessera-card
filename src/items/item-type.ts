@@ -44,7 +44,7 @@ export interface CellGeometry {
   columns: number;
   gap: number;
   iconSize: number;
-  labelSize: number;
+  nameSize: number;
 }
 
 export interface NormalizeContext {

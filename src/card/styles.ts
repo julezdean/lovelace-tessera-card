@@ -54,7 +54,7 @@ export const CARD_STYLES = `:host {
   --tsr-cell-h: 120px;
   --tsr-btn-radius: 18px;
   --tsr-icon-size: 30px;
-  --tsr-label-size: 14px;
+  --tsr-name-size: 14px;
   --tsr-anim-i: 1;
   --tsr-anim-d: 2s;
 }
@@ -213,8 +213,8 @@ ha-card.card {
 }
 
 .name {
-  font-size: var(--tsr-label-size);
-  font-weight: 550;
+  font-size: var(--tsr-name-size);
+  font-weight: var(--tsr-name-weight, 550);
   line-height: 1.2;
   letter-spacing: 0.005em;
   color: var(--tsr-text);
@@ -242,7 +242,9 @@ ha-card.card {
 .state {
   /* One line: a state is short, and a wrapped value reads worse than a
      shortened one. */
-  font-size: calc(var(--tsr-label-size) - 2px);
+  /* Two px under the name unless label_size says otherwise. */
+  font-size: var(--tsr-label-size, calc(var(--tsr-name-size) - 2px));
+  font-weight: var(--tsr-label-weight, 400);
   line-height: 1.2;
   color: var(--tsr-text-dim);
   font-variant-numeric: tabular-nums;
@@ -293,6 +295,16 @@ export const CARD_STYLES_TAIL = `
   25%      { transform: rotate(calc(-7deg * var(--tsr-anim-i))); }
   75%      { transform: rotate(calc(7deg * var(--tsr-anim-i))); }
 }
+
+/* --- show_icon: false ------------------------------------------------------ */
+/* The icon and its room go; name and state line move to the middle. */
+.btn.no-icon > .icon,
+.btn.no-icon .visual.icon-slot,
+.btn.no-icon .inner-icon,
+.btn.no-icon .graph-head .icon { display: none !important; }
+/* A ring without its drawing is only its icon - without that, nothing. */
+.btn.no-icon.drawing-off .visual.ring,
+.btn.no-icon.drawing-off .visual.digits { display: none; }
 
 /* --- Reduced motion ----------------------------------------------------- */
 

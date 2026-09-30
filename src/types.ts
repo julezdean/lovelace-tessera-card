@@ -110,7 +110,14 @@ export interface ItemBase {
   active_background: unknown;
   color: unknown;
   active_color: unknown;
+  /** Size and weight of the name. */
+  name_size: unknown;
+  name_weight: unknown;
+  /** Size and weight of the line under the name: the state, a value, `label`. */
   label_size: unknown;
+  label_weight: unknown;
+  /** false leaves the icon out, and its room with it. */
+  show_icon: unknown;
   icon_size: unknown;
   icon_color: unknown;
   press_effect: string;
