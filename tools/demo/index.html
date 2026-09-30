@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tessera Card - demo harness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* The variables a stock Home Assistant dark theme provides. The card reads
+       only these, so what this harness shows is what HA shows. */
+    --ha-card-background: #1c1c1e;
+    --card-background-color: #1c1c1e;
+    --primary-text-color: #e8e8ea;
+    --secondary-text-color: #8e8e93;
+    --primary-color: #03a9f4;
+    --state-active-color: #ffc107;
+    --error-color: #ff5f56;
+    --ha-card-box-shadow: 0 2px 16px rgba(0, 0, 0, 0.28);
+    /* ha-card falls back to these for its outline; every real theme sets
+       them, so leaving them out here would show a border no user ever sees. */
+    --divider-color: rgba(225, 225, 225, 0.12);
+    --ha-card-border-color: rgba(225, 225, 225, 0.12);
+    --ha-card-border-radius: 16px;
+    /* Home Assistant's named colours, which `color: amber` and the graph
+       palette resolve to. Values from the frontend's default theme. */
+    --red-color: #f44336;
+    --pink-color: #e91e63;
+    --purple-color: #926bc7;
+    --indigo-color: #3f51b5;
+    --blue-color: #2196f3;
+    --light-blue-color: #03a9f4;
+    --cyan-color: #00bcd4;
+    --teal-color: #009688;
+    --green-color: #4caf50;
+    --light-green-color: #8bc34a;
+    --lime-color: #cddc39;
+    --yellow-color: #ffeb3b;
+    --amber-color: #ffc107;
+    --orange-color: #ff9800;
+    --deep-orange-color: #ff6f22;
+  }
+  html, body {
+    margin: 0;
+    background: #0f1012;
+    color: #e8e8ea;
+    font-family: -apple-system, "SF Pro Text", Roboto, "Helvetica Neue", sans-serif;
+  }
+  body { padding: 24px; box-sizing: border-box; }
+  .scene { display: none; }
+  .scene.active { display: block; }
+  .strip { display: flex; flex-wrap: nowrap; gap: 20px; align-items: flex-start; }
+  .col { flex: 0 0 auto; }
+  .caption {
+    font-size: 12px;
+    color: #8e8e93;
+    margin: 0 0 8px 2px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .frame { /* stands in for the Lovelace column a card lives in */ }
+  pre {
+    font-size: 11px;
+    line-height: 1.45;
+    color: #a8d8a8;
+    background: #141518;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 0;
+    white-space: pre-wrap;
+  }
+  .form { font-size: 12px; }
+  .form label { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  .form fieldset { border: 1px solid #2c2d31; border-radius: 6px; margin: 6px 0; padding: 6px 8px; }
+  .form fieldset::before { content: attr(data-section); font-size: 11px; color: #8e8e93; }
+  .yaml-area { width: 100%; background: #141518; color: #a8d8a8; border: 1px solid #26272b; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 11px; padding: 8px; }
+  .cond-list { font-size: 12px; }
+  .cond { display: flex; justify-content: space-between; gap: 8px; padding: 4px 6px; border: 1px solid #2c2d31; border-radius: 6px; margin-bottom: 4px; }
+  .cond-add { background: none; border: 1px dashed #2c2d31; color: #4a9eff; border-radius: 6px; padding: 6px; width: 100%; font-size: 12px; }
+  .form input { width: 130px; background: #1c1d20; border: 1px solid #2c2d31; color: #e8e8ea; border-radius: 4px; padding: 2px 4px; }
+  .measure {
+    font-size: 12px;
+    margin: 8px 0 0 2px;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+
+<!-- Scene: how the layout engine reacts to the button count -->
+<div class="scene" id="scene-counts">
+  <div class="strip" id="counts-strip"></div>
+</div>
+
+<!-- Scene: a realistic mixed wall dashboard -->
+<div class="scene" id="scene-overview">
+  <div class="frame" style="width: 480px"><div id="overview-host"></div></div>
+</div>
+
+<!-- Scene: portrait tablet column -->
+<div class="scene" id="scene-portrait">
+  <div class="frame" style="width: 360px"><div id="portrait-host"></div></div>
+</div>
+
+<!-- Scene: icon above vs. beside the text -->
+<div class="scene" id="scene-inner">
+  <div class="strip">
+    <div class="col" style="width: 500px">
+      <p class="caption">500 px, 4 Spalten - Standard (vertikal)</p><div id="in-a"></div>
+    </div>
+    <div class="col" style="width: 500px">
+      <p class="caption">500 px, 4 Spalten - layout: horizontal</p><div id="in-b"></div>
+    </div>
+  </div>
+  <div class="strip" style="margin-top: 16px">
+    <div class="col" style="width: 700px">
+      <p class="caption">700 px, 4 Spalten - layout: horizontal</p><div id="in-c"></div>
+    </div>
+    <div class="col" style="width: 300px">
+      <p class="caption">300 px - lange Namen, zweizeilig</p><div id="in-d"></div>
+    </div>
+  </div>
+  <pre id="in-out"></pre>
+</div>
+
+<!-- Scene: opaque buttons on a translucent card -->
+<div class="scene" id="scene-opaque">
+  <div id="opaque-bg" style="background-image: linear-gradient(135deg,#2b4b6f 0%,#6f4b2b 50%,#2b6f4b 100%); padding: 20px; border-radius: 12px;">
+    <div class="strip">
+      <div class="col" style="width: 300px">
+        <p class="caption" style="color:#fff">default</p><div id="op-a"></div>
+      </div>
+      <div class="col" style="width: 300px">
+        <p class="caption" style="color:#fff">button.background deckend</p><div id="op-b"></div>
+      </div>
+      <div class="col" style="width: 300px">
+        <p class="caption" style="color:#fff">card_mod auf .btn</p><div id="op-c"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scene: does a card-mod theme reach this card? -->
+<div class="scene" id="scene-theme">
+  <div class="strip">
+    <div class="col" style="width: 420px">
+      <p class="caption">ohne Theme</p>
+      <div id="theme-plain"></div>
+    </div>
+    <div class="col" style="width: 420px">
+      <p class="caption">mit card-mod-card aus dem Theme</p>
+      <div id="theme-modded"></div>
+    </div>
+  </div>
+  <pre id="theme-out"></pre>
+</div>
+
+<!-- Scene: per-button accent colour -->
+<div class="scene" id="scene-background">
+  <div class="frame" style="width: 520px"><div id="bg-host"></div></div>
+  <pre id="bg-out"></pre>
+</div>
+
+<div class="scene" id="scene-border">
+  <div class="frame" style="width: 460px"><div id="border-host"></div></div>
+  <pre id="border-out"></pre>
+</div>
+
+<div class="scene" id="scene-accent">
+  <div class="frame" style="width: 560px"><div id="accent-host"></div></div>
+  <pre id="accent-out"></pre>
+</div>
+
+<!-- Scene: templated fields -->
+<div class="scene" id="scene-templates">
+  <div class="frame" style="width: 560px"><div id="tpl-host"></div></div>
+  <pre id="tpl-out"></pre>
+</div>
+
+<!-- Scene: visibility conditions reshaping the layout -->
+<div class="scene" id="scene-visibility">
+  <div class="strip">
+    <div class="col" style="width: 420px">
+      <p class="caption">light.wohnzimmer = on</p>
+      <div id="vis-on"></div>
+    </div>
+    <div class="col" style="width: 420px">
+      <p class="caption">light.wohnzimmer = off</p>
+      <div id="vis-off"></div>
+    </div>
+    <div class="col" style="width: 420px">
+      <p class="caption">nothing visible</p>
+      <div id="vis-none" style="outline: 1px dashed #ff5f56; min-height: 40px"></div>
+    </div>
+  </div>
+  <pre id="vis-out"></pre>
+</div>
+
+<!-- Scene: the user's config - colspan width and icon size -->
+<div class="scene" id="scene-colspan">
+  <div class="strip">
+    <div class="col" style="width: 560px">
+      <p class="caption">mode: grid, columns: 5 - the raster is kept</p>
+      <div id="colspan-host"></div>
+      <pre id="colspan-out"></pre>
+    </div>
+    <div class="col" style="width: 560px">
+      <p class="caption">mode: auto - rows are balanced</p>
+      <div id="colspan-auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Scene: the visual editor, against the ha-form stub -->
+<div class="scene" id="scene-editor">
+  <div class="strip">
+    <div class="col" style="width: 460px">
+      <p class="caption">editor</p>
+      <div id="editor-host"></div>
+    </div>
+    <div class="col" style="width: 400px">
+      <p class="caption">a button's sub-page</p>
+      <div id="editor-sub"></div>
+    </div>
+    <div class="col" style="width: 330px">
+      <p class="caption">resulting config</p>
+      <pre id="editor-out">(edit a field)</pre>
+    </div>
+  </div>
+</div>
+
+<!-- Scene: the host is height-constrained, as in a HA sections grid cell -->
+<div class="scene" id="scene-constrained">
+  <div class="strip">
+    <div class="col" style="width: 480px">
+      <p class="caption">the cell the card asks for</p>
+      <div id="con-a" style="outline: 1px dashed #4a9eff"></div>
+    </div>
+    <div class="col" style="width: 480px">
+      <p class="caption">a cell dragged taller</p>
+      <div id="con-b" style="height: 312px; outline: 1px dashed #4a9eff"></div>
+    </div>
+    <div class="col" style="width: 480px">
+      <p class="caption">a cell dragged to min_rows</p>
+      <div id="con-c" style="outline: 1px dashed #4a9eff"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Scene: narrow column, many buttons -> compact inner layout -->
+<div class="scene" id="scene-compact">
+  <div class="strip">
+    <div class="col" style="width: 250px">
+      <p class="caption">250 px column</p><div id="compact-a"></div>
+    </div>
+    <div class="col" style="width: 170px">
+      <p class="caption">170 px column</p><div id="compact-b"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Scene: every animation type at once -->
+<div class="scene" id="scene-animations">
+  <div class="frame" style="width: 760px"><div id="anim-host"></div></div>
+</div>
+
+<!-- Scene: the progress types next to buttons -->
+<div class="scene" id="scene-progress">
+  <div class="strip">
+    <div class="col" style="width: 480px"><p class="caption">Section column, 480 px</p><div id="progress-host"></div></div>
+    <div class="col" style="width: 360px"><p class="caption">Narrow column, 360 px</p><div id="progress-narrow"></div></div>
+    <div class="col" style="width: 340px"><p class="caption">Smallest cells, 3 columns</p><div id="progress-small"></div></div>
+  </div>
+</div>
+
+<!-- Scene: graphs, both arrangements, next to a button -->
+<div class="scene" id="scene-graph">
+  <div class="strip">
+    <div class="col" style="width: 480px"><p class="caption">graph_layout: split</p><div id="graph-split"></div></div>
+    <div class="col" style="width: 480px"><p class="caption">graph_layout: background</p><div id="graph-background"></div></div>
+    <div class="col" style="width: 300px"><p class="caption">y_axis: secondary</p><div id="graph-axes"></div></div>
+  </div>
+</div>
+
+<!-- Scene: active_when and show_drawing - the same card, timer running and idle -->
+<div class="scene" id="scene-drawing">
+  <div class="strip">
+    <div class="col" style="width: 480px"><p class="caption">Timer running</p><div id="drawing-on"></div></div>
+    <div class="col" style="width: 480px"><p class="caption">Timer idle</p><div id="drawing-off"></div></div>
+  </div>
+</div>
+
+<!-- Scene: development only - a countdown on the real clock, sampled -->
+<div class="scene" id="scene-tick">
+  <div class="frame" style="width: 480px"><div id="tick-host"></div></div>
+  <pre id="tick-out"></pre>
+</div>
+
+<!-- Scene: landscape / wide wall panel -->
+<div class="scene" id="scene-landscape">
+  <div class="frame" style="width: 900px"><div id="landscape-host"></div></div>
+</div>
+
+<script type="module">
+import '../../dist/tessera-card.js';   // the real, built card - not a copy
+import { ICONS } from './icons.js';
+
+/* ------------------------------------------------------------------ *
+ * Stubs for the two Home Assistant elements the card renders.
+ * They do exactly what HA's do for our purposes: draw an MDI path.
+ * ------------------------------------------------------------------ */
+
+const DOMAIN_ICONS = {
+  light: 'mdi:lightbulb',
+  switch: 'mdi:toggle-switch-variant',
+  sensor: 'mdi:eye',
+  climate: 'mdi:thermostat',
+  cover: 'mdi:window-shutter',
+  lock: 'mdi:lock',
+  media_player: 'mdi:speaker',
+  fan: 'mdi:fan',
+  scene: 'mdi:palette',
+  script: 'mdi:script-text',
+  binary_sensor: 'mdi:radiobox-blank',
+  vacuum: 'mdi:robot-vacuum',
+};
+
+class HaIcon extends HTMLElement {
+  static get observedAttributes() { return ['icon']; }
+  set icon(value) { this._icon = value; this._render(); }
+  get icon() { return this._icon; }
+  attributeChangedCallback(_n, _o, value) { this.icon = value; }
+  connectedCallback() { this._render(); }
+  _render() {
+    const path = ICONS[this._icon];
+    this.innerHTML = path
+      ? `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block">
+           <path d="${path}" fill="currentColor"></path>
+         </svg>`
+      : '';
+  }
+}
+customElements.define('ha-icon', HaIcon);
+
+class HaStateIcon extends HaIcon {
+  set stateObj(value) {
+    this._stateObj = value;
+    const domain = value && value.entity_id ? value.entity_id.split('.')[0] : '';
+    this.icon = (value && value.attributes && value.attributes.icon) || DOMAIN_ICONS[domain] || 'mdi:help-circle-outline';
+  }
+  set hass(value) { this._hass = value; }
+}
+customElements.define('ha-state-icon', HaStateIcon);
+
+/**
+ * A deliberately plain stand-in for <ha-form>. It does NOT reproduce how Home
+ * Assistant renders the form - that cannot be checked outside HA. What it does
+ * reproduce is the contract the editor depends on: read .schema and .data,
+ * render one control per field (recursing into expandable sections), and emit
+ * value-changed with the FULL data object when a field changes.
+ */
+class HaFormStub extends HTMLElement {
+  set hass(v) { this._hass = v; }
+  set computeLabel(fn) { this._computeLabel = fn; }
+  set schema(v) { this._schema = v; this._render(); }
+  set data(v) { this._data = v; this._render(); }
+  get data() { return this._data; }
+
+  _render() {
+    if (!this._schema || !this._data) return;
+    this.innerHTML = '';
+    const list = document.createElement('div');
+    list.className = 'form';
+    this._walk(this._schema, this._data, [], list);
+    this.appendChild(list);
+  }
+
+  _walk(schema, data, path, host) {
+    for (const item of schema) {
+      if (item.type === 'expandable') {
+        // name: '' means the children write into the parent object.
+        const nextPath = item.name ? [...path, item.name] : path;
+        const nextData = item.name ? (data[item.name] || {}) : data;
+        const group = document.createElement('fieldset');
+        group.dataset.section = item.title;
+        this._walk(item.schema, nextData, nextPath, group);
+        host.appendChild(group);
+        continue;
+      }
+      host.appendChild(this._field(item, data[item.name], [...path, item.name]));
+    }
+  }
+
+  _field(item, value, path) {
+    const row = document.createElement('label');
+    row.dataset.path = path.join('.');
+    row.dataset.selector = Object.keys(item.selector || {})[0] || 'unknown';
+    row.textContent = this._computeLabel ? this._computeLabel(item) : item.name;
+
+    const input = document.createElement('input');
+    const kind = row.dataset.selector;
+    if (kind === 'boolean') {
+      input.type = 'checkbox';
+      input.checked = !!value;
+    } else {
+      input.type = kind === 'number' ? 'number' : 'text';
+      input.value = value === undefined || value === null ? '' : String(value);
+    }
+    input.addEventListener('input', () => {
+      const raw = kind === 'boolean' ? input.checked : kind === 'number' ? Number(input.value) : input.value;
+      this._write(path, raw);
+      this.dispatchEvent(new CustomEvent('value-changed', {
+        detail: { value: this._data }, bubbles: true, composed: true,
+      }));
+    });
+    row.appendChild(input);
+    return row;
+  }
+
+  _write(path, value) {
+    let target = this._data;
+    for (const key of path.slice(0, -1)) {
+      target[key] = { ...(target[key] || {}) };
+      target = target[key];
+    }
+    target[path[path.length - 1]] = value;
+  }
+}
+customElements.define('ha-form', HaFormStub);
+
+/**
+ * Stand-in for HA's ha-card-conditions-editor. It does not reproduce HA's UI -
+ * that cannot be checked outside HA - only the contract the card relies on:
+ * read .conditions, and emit value-changed with the new list in detail.value.
+ *
+ * ?noconditions=1 leaves it undefined, which exercises the fallback path.
+ */
+if (!new URLSearchParams(location.search).has('noconditions')) {
+  class HaCardConditionsEditorStub extends HTMLElement {
+    set hass(v) { this._hass = v; }
+    set conditions(v) { this._conditions = v || []; this._render(); }
+    get conditions() { return this._conditions; }
+    _render() {
+      this.innerHTML = '';
+      const list = document.createElement('div');
+      list.className = 'cond-list';
+      (this._conditions || []).forEach((c, i) => {
+        const row = document.createElement('div');
+        row.className = 'cond';
+        row.textContent = `${c.condition}: ${c.entity || ''} ${c.state || c.above || ''}`;
+        const del = document.createElement('button');
+        del.textContent = 'x';
+        del.addEventListener('click', () => {
+          const next = this._conditions.filter((_, j) => j !== i);
+          this.dispatchEvent(new CustomEvent('value-changed', {
+            detail: { value: next }, bubbles: true, composed: true,
+          }));
+        });
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+      const add = document.createElement('button');
+      add.className = 'cond-add';
+      add.textContent = '+ add condition';
+      add.addEventListener('click', () => {
+        const next = [...(this._conditions || []),
+          { condition: 'state', entity: 'light.wohnzimmer', state: 'on' }];
+        this.dispatchEvent(new CustomEvent('value-changed', {
+          detail: { value: next }, bubbles: true, composed: true,
+        }));
+      });
+      list.appendChild(add);
+      this.appendChild(list);
+    }
+  }
+  customElements.define('ha-card-conditions-editor', HaCardConditionsEditorStub);
+}
+
+// loadCardHelpers exists in HA; here it only has to resolve so the loader path
+// is exercised rather than short-circuited.
+window.loadCardHelpers = async () => ({
+  createCardElement: async () => ({ constructor: { getConfigElement: async () => ({}) } }),
+});
+
+/**
+ * Stand-in for ha-yaml-editor: a textarea that emits value-changed with the
+ * parsed object. HA parses YAML; here JSON is enough to exercise the contract.
+ */
+class HaYamlEditorStub extends HTMLElement {
+  set hass(v) { this._hass = v; }
+  set defaultValue(v) {
+    this._value = v;
+    this.innerHTML = '';
+    const ta = document.createElement('textarea');
+    ta.className = 'yaml-area';
+    ta.rows = 8;
+    ta.value = JSON.stringify(v, null, 2);
+    ta.addEventListener('input', () => {
+      let parsed = null;
+      let isValid = true;
+      try { parsed = JSON.parse(ta.value); } catch (e) { isValid = false; }
+      this.dispatchEvent(new CustomEvent('value-changed', {
+        detail: { value: parsed, isValid }, bubbles: true, composed: true,
+      }));
+    });
+    this.appendChild(ta);
+  }
+}
+customElements.define('ha-yaml-editor', HaYamlEditorStub);
+
+/**
+ * Stand-in for ha-card, with the same theme variables the real one reads.
+ * Without it the harness would not show what a theme does to the card.
+ */
+class HaCardStub extends HTMLElement {
+  constructor() {
+    // In the constructor, the way Lit sets a shadow root up: attaching it on
+    // connect left the styles out of the first layout pass.
+    super();
+    const root = this.attachShadow({ mode: 'open' });
+    const style = document.createElement('style');
+    style.textContent = `
+      :host {
+        background: var(--ha-card-background, var(--card-background-color, white));
+        border-radius: var(--ha-card-border-radius, 12px);
+        border-width: var(--ha-card-border-width, 1px);
+        border-style: solid;
+        border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+        box-shadow: var(--ha-card-box-shadow, none);
+        color: var(--primary-text-color);
+        display: block;
+        transition: all 0.3s ease-out 0s;
+        position: relative;
+      }
+    `;
+    root.append(style, document.createElement('slot'));
+  }
+}
+customElements.define('ha-card', HaCardStub);
+
+/** ha-icon-button is only a clickable wrapper as far as the editor cares. */
+class HaIconButtonStub extends HTMLElement {}
+customElements.define('ha-icon-button', HaIconButtonStub);
+
+/* ------------------------------------------------------------------ *
+ * Mock hass object
+ * ------------------------------------------------------------------ */
+
+const entity = (id, state, attributes = {}, extra = {}) => [id, { entity_id: id, state, attributes, ...extra }];
+
+/*
+ * The progress scene runs on a fixed clock, so the countdowns in its image say
+ * the same thing every time it is rendered. 18:25:00 local time.
+ */
+const NOW = new Date(2026, 8, 30, 18, 25, 0).getTime();
+const iso = (ms) => new Date(ms).toISOString();
+
+/** Shapes over 0..1 of the window, one per entity with a history. */
+const HISTORY_CURVES = {
+  'sensor.wohnzimmer_temperatur': (x) => 20.2 + 1.4 * Math.sin(x * Math.PI * 2 - 1.2) + 0.25 * Math.sin(x * 37),
+  'sensor.aussen_temperatur': (x) => 7.8 + 4.2 * Math.sin(x * Math.PI * 2 - 1.8) + 0.4 * Math.sin(x * 23),
+  'sensor.flur_temperatur': (x) => 19.1 + 0.8 * Math.sin(x * Math.PI * 2 - 0.9),
+  'sensor.luftfeuchte': (x) => 48 + 7 * Math.sin(x * Math.PI * 3 + 0.4) + 1.5 * Math.sin(x * 41),
+  'sensor.leistung': (x) => Math.max(0, 180 + 900 * Math.max(0, Math.sin(x * Math.PI * 5)) ** 3 + 40 * Math.sin(x * 60)),
+};
+
+const hass = {
+  states: Object.fromEntries([
+    entity('light.wohnzimmer', 'on', { friendly_name: 'Wohnzimmer' }),
+    entity('light.kueche', 'off', { friendly_name: 'Küche' }),
+    entity('light.schlafzimmer', 'off', { friendly_name: 'Schlafzimmer' }),
+    entity('light.bad', 'on', { friendly_name: 'Bad' }),
+    entity('light.flur', 'off', { friendly_name: 'Flur' }),
+    entity('light.buero', 'on', { friendly_name: 'Büro' }),
+    entity('switch.kaffeemaschine', 'off', { friendly_name: 'Kaffeemaschine' }),
+    entity('switch.terrasse', 'on', { friendly_name: 'Terrasse' }),
+    entity('sensor.wohnzimmer_temperatur', '21.4', { friendly_name: 'Wohnzimmer', unit_of_measurement: '°C' }),
+    entity('sensor.aussen_temperatur', '7.8', { friendly_name: 'Außen', unit_of_measurement: '°C' }),
+    entity('sensor.luftfeuchte', '46', { friendly_name: 'Luftfeuchte', unit_of_measurement: '%' }),
+    entity('sensor.flur_temperatur', '19.4', { friendly_name: 'Flur', unit_of_measurement: '°C' }),
+    entity('sensor.leistung', '212', { friendly_name: 'Leistung', unit_of_measurement: 'W' }),
+    entity('binary_sensor.waschmaschine', 'on', { friendly_name: 'Waschmaschine' }),
+    entity('binary_sensor.fenster', 'on', { friendly_name: 'Fenster', anzahl_offen: 3, anzahl_nicht_verfuegbar: 1 }),
+    entity('cover.rolladen_wohnzimmer', 'open', { friendly_name: 'Rolladen', current_position: 80 }),
+    entity('lock.haustuer', 'locked', { friendly_name: 'Haustür' }),
+    entity('media_player.wohnzimmer', 'playing', { friendly_name: 'Sonos' }),
+    entity('climate.wohnzimmer', 'heat', { friendly_name: 'Heizung', current_temperature: 21.5 }),
+    entity('fan.schlafzimmer', 'off', { friendly_name: 'Ventilator' }),
+    entity('vacuum.staubsauger', 'docked', { friendly_name: 'Staubsauger' }),
+    entity('sensor.kaputt', 'unavailable', { friendly_name: 'Defekter Sensor' }),
+    entity('timer.kaffee', 'active', {
+      friendly_name: 'Kaffee', duration: '0:05:00', remaining: '0:05:00',
+      finishes_at: iso(NOW + 155_000), last_transition: 'started',
+    }),
+    entity('timer.eier', 'paused', {
+      friendly_name: 'Eier', duration: '0:08:00', remaining: '0:03:20', last_transition: 'paused',
+    }),
+    entity('timer.tee', 'idle', { friendly_name: 'Tee', duration: '0:04:00', last_transition: 'cancelled' }),
+    entity('sensor.waschmaschine_restzeit', '23', {
+      friendly_name: 'Waschmaschine', unit_of_measurement: 'min', device_class: 'duration',
+    }, { last_changed: iso(NOW - 20_000), last_updated: iso(NOW - 20_000) }),
+    entity('sensor.handy_akku', '60', {
+      friendly_name: 'Handy', unit_of_measurement: '%', device_class: 'battery',
+    }),
+    entity('sensor.backofen_fertig', iso(NOW + 700_000), {
+      friendly_name: 'Backofen', device_class: 'timestamp',
+    }),
+  ]),
+  /*
+   * history/stream, as Home Assistant answers it: the window's history in one
+   * message. The curves are computed, not random, so the image is the same
+   * on every run.
+   */
+  connection: {
+    subscribeMessage(callback, message) {
+      if (message.type !== 'history/stream') return Promise.reject(new Error('not mocked'));
+      const start = Date.parse(message.start_time);
+      const end = Date.now();
+      const states = {};
+      for (const id of message.entity_ids) {
+        const curve = HISTORY_CURVES[id];
+        if (!curve) continue;
+        const list = [];
+        for (let t = start; t <= end; t += 10 * 60_000) {
+          list.push({ s: String(Math.round(curve((t - start) / (end - start)) * 10) / 10), lu: t / 1000 });
+        }
+        states[id] = list;
+      }
+      setTimeout(() => callback({ states, start_time: start / 1000 }), 0);
+      return Promise.resolve(() => Promise.resolve());
+    },
+  },
+  language: 'de',
+  locale: { language: 'de', time_format: '24' },
+  callService: (...args) => console.log('callService', ...args),
+  formatEntityState: (stateObj) => {
+    const unit = stateObj.attributes.unit_of_measurement;
+    const translations = {
+      on: 'Ein', off: 'Aus', open: 'Offen', closed: 'Geschlossen',
+      locked: 'Verriegelt', unlocked: 'Offen', playing: 'Läuft',
+      heat: 'Heizen', docked: 'Geladen', unavailable: 'Nicht verfügbar',
+    };
+    if (unit) return `${stateObj.state} ${unit}`;
+    return translations[stateObj.state] || stateObj.state;
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * Scenes
+ * ------------------------------------------------------------------ */
+
+function card(config, host) {
+  const el = document.createElement('tessera-card');
+  el.setConfig(config);
+  el.hass = hass;
+  // ?hide=text: the same render without the labels, so a measurement can
+  // tell the pixels behind the text from the text (see README, Development).
+  if (new URLSearchParams(location.search).get('hide') === 'text') {
+    const style = document.createElement('style');
+    style.textContent = '.labels, .labels * { color: transparent !important; }';
+    el.shadowRoot.appendChild(style);
+  }
+  host.appendChild(el);
+  return el;
+}
+
+const BUTTON_POOL = [
+  { name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'light.wohnzimmer' },
+  { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+  { name: 'Bad', icon: 'mdi:shower', entity: 'light.bad' },
+  { name: 'Schlafzimmer', icon: 'mdi:bed', entity: 'light.schlafzimmer' },
+  { name: 'Flur', icon: 'mdi:door-open', entity: 'light.flur' },
+  { name: 'Büro', icon: 'mdi:desk-lamp', entity: 'light.buero' },
+  { name: 'Terrasse', icon: 'mdi:string-lights', entity: 'switch.terrasse' },
+  { name: 'Kaffee', icon: 'mdi:coffee-maker', entity: 'switch.kaffeemaschine' },
+];
+
+const SCENES = {
+  counts() {
+    const strip = document.getElementById('counts-strip');
+    for (const count of [1, 2, 3, 5, 8]) {
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.style.width = '340px';
+      col.innerHTML = `<p class="caption">${count} ${count === 1 ? 'button' : 'buttons'}</p>`;
+      strip.appendChild(col);
+      const host = document.createElement('div');
+      col.appendChild(host);
+      card({ items: BUTTON_POOL.slice(0, count).map((b) => ({ ...b })) }, host);
+    }
+  },
+
+  drawing() {
+    Date.now = () => NOW;
+    const items = [
+      { type: 'ring', entity: 'timer.kaffee', icon: 'mdi:coffee', show_drawing: 'active' },
+      { type: 'bar', entity: 'timer.kaffee', name: 'Kaffee', icon: 'mdi:coffee', show_drawing: 'active' },
+      { type: 'digits', entity: 'timer.kaffee', name: 'Kaffee', icon: 'mdi:coffee', show_drawing: 'active' },
+      // A button lit by a template instead of by its own state.
+      { name: 'Lüften', icon: 'mdi:window-open-variant', entity: 'sensor.luftfeuchte',
+        show_state: true, active_when: '[[[ return Number(entity.state) > 45 ]]]' },
+      // The graph only while the humidity is high: active_when makes it
+      // active, show_drawing shows it then.
+      { type: 'graph', entity: 'sensor.luftfeuchte', icon: 'mdi:water-percent', colspan: 2,
+        active_when: '[[[ return Number(entity.state) > 45 ]]]', show_drawing: 'active' },
+    ];
+    const idle = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'timer.kaffee': { ...hass.states['timer.kaffee'], state: 'idle',
+          attributes: { friendly_name: 'Kaffee', duration: '0:05:00', last_transition: 'cancelled' } },
+        'sensor.luftfeuchte': { ...hass.states['sensor.luftfeuchte'], state: '41' },
+      },
+    };
+    card({ items }, document.getElementById('drawing-on'));
+    const off = card({ items }, document.getElementById('drawing-off'));
+    off.hass = idle;
+  },
+
+  graph() {
+    Date.now = () => NOW;
+    const items = (layout) => [
+      { type: 'graph', entity: 'sensor.wohnzimmer_temperatur', graph_layout: layout,
+        icon: 'mdi:thermometer', colspan: 2,
+        lines: [{ entity: 'sensor.aussen_temperatur' }] },
+      { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+      { type: 'graph', entity: 'sensor.luftfeuchte', graph_layout: layout, icon: 'mdi:water-percent',
+        colors: { thresholds: [{ value: 40, color: 'amber' }, { value: 50, color: 'blue' }] } },
+      { type: 'graph', entity: 'sensor.leistung', graph_layout: layout, icon: 'mdi:flash',
+        graph: 'bar', points_per_hour: 0.5, label: '{{value}} · max {{max}}' },
+      { type: 'graph', entity: 'sensor.flur_temperatur', graph_layout: layout, icon: 'mdi:thermometer',
+        lower_bound: '~18', min_bound_range: 3 },
+    ];
+    card({ title: 'Klima', items: items('split') }, document.getElementById('graph-split'));
+    card({ title: 'Klima', items: items('background') }, document.getElementById('graph-background'));
+    // Temperature and humidity: on one axis the temperature is a straight
+    // line, on two each takes the whole height.
+    card({ title: 'Achsen', items: [
+      { type: 'graph', entity: 'sensor.wohnzimmer_temperatur', name: '1 Achse', icon: 'mdi:thermometer',
+        lines: [{ entity: 'sensor.luftfeuchte' }] },
+      { type: 'graph', entity: 'sensor.wohnzimmer_temperatur', name: '2 Achsen', icon: 'mdi:thermometer',
+        label: "[[[ return entity.state + ' °C · ' + states['sensor.luftfeuchte'].state + ' %' ]]]",
+        lines: [{ entity: 'sensor.luftfeuchte', y_axis: 'secondary' }] },
+    ] }, document.getElementById('graph-axes'));
+  },
+
+  progress() {
+    // The fixed clock, before the first card reads it.
+    Date.now = () => NOW;
+    const items = [
+      { type: 'ring', entity: 'timer.kaffee', icon: 'mdi:coffee',
+        hold_action: { action: 'perform-action', perform_action: 'timer.cancel',
+          target: { entity_id: 'timer.kaffee' } } },
+      { type: 'bar', entity: 'sensor.waschmaschine_restzeit', icon: 'mdi:washing-machine',
+        progress: { window: '2h' } },
+      { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+      { type: 'segments', entity: 'sensor.handy_akku', icon: 'mdi:cellphone', segments: 5 },
+      { type: 'ring', entity: 'timer.eier', icon: 'mdi:egg' },
+      { type: 'digits', entity: 'sensor.backofen_fertig', progress: { window: '30m' } },
+    ];
+    card({ title: 'Küche', items }, document.getElementById('progress-host'));
+    card({ items: items.slice(0, 4) }, document.getElementById('progress-narrow'));
+    card({ layout: { mode: 'grid', columns: 3 }, items }, document.getElementById('progress-small'));
+  },
+
+  tick() {
+    // Real clock: a timer ending in 10.4 s. The log shows what the ring says
+    // over time, and how often the card rewrote it.
+    const start = Date.now();
+    const timer = entity('timer.probe', 'active', {
+      friendly_name: 'Probe', duration: '0:00:20', remaining: '0:00:20',
+      finishes_at: new Date(start + 10_400).toISOString(),
+    })[1];
+    const probeHass = { ...hass, states: { ...hass.states, 'timer.probe': timer } };
+    const el = document.createElement('tessera-card');
+    el.setConfig({ items: [{ type: 'ring', entity: 'timer.probe' }, { name: 'Küche', entity: 'light.kueche' }] });
+    el.hass = probeHass;
+    document.getElementById('tick-host').appendChild(el);
+    const value = () => el.shadowRoot.querySelector('.inner-value').textContent;
+    let writes = 0;
+    new MutationObserver((list) => { writes += list.length; })
+      .observe(el.shadowRoot.querySelector('.btn'), { subtree: true, characterData: true, childList: true });
+    const lines = [];
+    for (let t = 0; t <= 12_000; t += 500) {
+      setTimeout(() => {
+        lines.push(`${String(Date.now() - start).padStart(5)} ms  ${value()}  (${writes} DOM writes so far)`);
+        document.getElementById('tick-out').textContent = lines.join('\n');
+      }, t);
+    }
+  },
+
+  overview() {
+    card({
+      title: 'Erdgeschoss',
+      items: [
+        { name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'light.wohnzimmer',
+          hold_action: { action: 'more-info' },
+          animation: { type: 'breathe', when: 'on', duration: '4s', intensity: 0.7 } },
+        { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+        { name: 'Waschmaschine', icon: 'mdi:washing-machine', entity: 'binary_sensor.waschmaschine',
+          show_state: true, state_display: 'Läuft', animation: { type: 'pulse', when: 'on', duration: '2.4s' } },
+        { name: 'Temperatur', icon: 'mdi:thermometer', entity: 'sensor.wohnzimmer_temperatur', show_state: true },
+        { name: 'Gute Nacht', icon: 'mdi:weather-night', colspan: 2,
+          tap_action: { action: 'call-service', service: 'scene.turn_on', target: { entity_id: 'scene.gute_nacht' } } },
+      ],
+    }, document.getElementById('overview-host'));
+  },
+
+  portrait() {
+    card({
+      items: [
+        { name: 'Alles aus', icon: 'mdi:power', colspan: 2,
+          tap_action: { action: 'call-service', service: 'light.turn_off', target: { entity_id: 'all' }, confirmation: true } },
+        { name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'light.wohnzimmer' },
+        { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+        { name: 'Bad', icon: 'mdi:shower', entity: 'light.bad' },
+        { name: 'Flur', icon: 'mdi:door-open', entity: 'light.flur' },
+        { name: 'Haustür', icon: 'mdi:lock', entity: 'lock.haustuer', show_state: true },
+        { name: 'Außen', icon: 'mdi:thermometer', entity: 'sensor.aussen_temperatur', show_state: true },
+      ],
+    }, document.getElementById('portrait-host'));
+  },
+
+  inner() {
+    // The user's own four buttons.
+    const four = [
+      { name: 'Haustür', entity: 'binary_sensor.fenster', icon: 'mdi:door-open', show_state: true, state_display: 'Geöffnet' },
+      { name: 'Fenster', entity: 'binary_sensor.fenster', icon: 'mdi:window-closed', show_state: true, state_display: 'Geöffnet: 1' },
+      { name: 'Bewegung', entity: 'binary_sensor.waschmaschine', icon: 'mdi:motion-sensor', show_state: true, state_display: '1 aktiv' },
+      { name: 'Regensensor', entity: 'light.kueche', icon: 'mdi:weather-rainy', show_state: true, state_display: 'kein Regen' },
+    ];
+    // Four in one row is what makes the columns narrow enough to flip.
+    const row = { mode: 'grid', columns: 4 };
+    const a = card({ layout: row, items: four }, document.getElementById('in-a'));
+    card({ layout: row, button: { layout: 'horizontal' }, items: four },
+      document.getElementById('in-b'));
+    card({ layout: row, button: { layout: 'horizontal' }, items: four },
+      document.getElementById('in-c'));
+    card({ items: [
+      { name: 'Wintergarten hinten', entity: 'light.wohnzimmer', icon: 'mdi:sofa' },
+      { name: 'Abstellkammer', entity: 'light.kueche', icon: 'mdi:broom' },
+    ] }, document.getElementById('in-d'));
+
+    requestAnimationFrame(() => {
+      const look = (el) => el.shadowRoot.querySelector('.btn').classList.contains('compact')
+        ? 'horizontal' : 'vertikal';
+      const cells = (el) => {
+        const g = el.shadowRoot.querySelector('.grid');
+        return g.style.getPropertyValue('--tsr-cell-h');
+      };
+      document.getElementById('in-out').textContent =
+        `500px, Standard               -> ${look(a)}\n` +
+        `500px, layout: horizontal      -> ${look(document.querySelector('#in-b tessera-card'))}  (zu schmal - deshalb nicht der Standard)\n` +
+        `700px, layout: horizontal      -> ${look(document.querySelector('#in-c tessera-card'))}  (hier sinnvoll)`;
+    });
+  },
+
+  opaque() {
+    const buttons = [
+      { name: 'Wohnzimmer', entity: 'light.wohnzimmer', icon: 'mdi:sofa' },
+      { name: 'Küche', entity: 'light.kueche', icon: 'mdi:countertop' },
+    ];
+    const glass = (el) => {
+      // What the user's theme does to every card.
+      const st = document.createElement('style');
+      st.textContent = 'ha-card { background: rgba(28, 25, 22, 0.80) !important; border: none !important; }';
+      el.shadowRoot.appendChild(st);
+    };
+
+    const a = card({ items: buttons }, document.getElementById('op-a'));
+    const b = card({ items: buttons, button: { background: '#2a2724' } }, document.getElementById('op-b'));
+    const c = card({ items: buttons }, document.getElementById('op-c'));
+
+    requestAnimationFrame(() => {
+      [a, b, c].forEach(glass);
+      const st = document.createElement('style');
+      st.textContent = '.btn { background: #2a2724 !important; }';
+      c.shadowRoot.appendChild(st);
+    });
+  },
+
+  theme() {
+    const buttons = [
+      { name: 'Wohnzimmer', entity: 'light.wohnzimmer', icon: 'mdi:sofa' },
+      { name: 'Küche', entity: 'light.kueche', icon: 'mdi:countertop' },
+    ];
+    const plain = card({ items: buttons }, document.getElementById('theme-plain'));
+    const modded = card({ items: buttons }, document.getElementById('theme-modded'));
+
+    requestAnimationFrame(() => {
+      // Exactly what card-mod does with card-mod-card: put the theme's styles
+      // into the card element's shadow root.
+      const themeStyle = document.createElement('style');
+      themeStyle.textContent = `
+        ha-card {
+          background: rgba(28, 25, 22, 0.80) !important;
+          border: none !important;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        :host, ha-card { height: 100%; }
+      `;
+      modded.shadowRoot.appendChild(themeStyle);
+
+      const read = (el, label) => {
+        const c = el.shadowRoot.querySelector('ha-card');
+        if (!c) return `${label}: no ha-card in this card!`;
+        const cs = getComputedStyle(c);
+        return `${label.padEnd(11)} bg=${cs.backgroundColor}  border=${cs.borderTopWidth} ${cs.borderTopStyle}\n` +
+          `${''.padEnd(11)} shadowRoot=${!!c.shadowRoot}  ` +
+          `--ha-card-background="${cs.getPropertyValue('--ha-card-background').trim()}"  ` +
+          `radius=${cs.borderRadius}`;
+      };
+      document.getElementById('theme-out').textContent = [
+        read(plain, 'ohne Theme'),
+        read(modded, 'mit Theme'),
+        '',
+        'expected with theme: background=rgba(28, 25, 22, 0.8), border=0px none',
+      ].join('\n');
+    });
+  },
+
+  background() {
+    const el = card({
+      items: [
+        { name: 'nur background', entity: 'light.wohnzimmer', icon: 'mdi:sofa',
+          background: '#3a2f1f' },
+        { name: 'beide, aktiv', entity: 'light.wohnzimmer', icon: 'mdi:sofa',
+          background: '#3a2f1f', active_background: '#7a4f1f' },
+        { name: 'beide, inaktiv', entity: 'light.kueche', icon: 'mdi:countertop',
+          background: '#3a2f1f', active_background: '#7a4f1f' },
+        { name: 'nur active_bg, aktiv', entity: 'light.bad', icon: 'mdi:shower',
+          active_background: '#1f4f7a' },
+      ],
+    }, document.getElementById('bg-host'));
+
+    requestAnimationFrame(() => {
+      const noAnim = document.createElement('style');
+      noAnim.textContent = '* { transition: none !important; }';
+      el.shadowRoot.appendChild(noAnim);
+
+      const rows = [...el.shadowRoot.querySelectorAll('.btn')].map((b) => {
+        const cs = getComputedStyle(b);
+        return `${b.querySelector('.name').textContent.padEnd(22)} ` +
+          `active=${String(b.classList.contains('active')).padEnd(5)} ` +
+          `background=${cs.backgroundColor}`;
+      });
+      rows.push('');
+      rows.push('expected: row 2 = #7a4f1f (122,79,31), row 3 = #3a2f1f (58,47,31)');
+      document.getElementById('bg-out').textContent = rows.join('\n');
+    });
+  },
+
+  border() {
+    const host = document.getElementById('border-host');
+    const el = card({
+      items: [
+        { name: 'Mit Rand', entity: 'light.wohnzimmer', icon: 'mdi:sofa',
+          style: 'border: 2px solid #ff5f56; border-radius: 4px' },
+        { name: 'Wechselnd', entity: 'light.kueche', icon: 'mdi:countertop',
+          style: '[[[ return entity.state === "on" ? "border: 3px solid #5ac26b" : "" ]]]' },
+      ],
+    }, host);
+
+    requestAnimationFrame(() => {
+      // Transitions would smear every reading; this test is about the value
+      // being set and removed, not about how it animates.
+      const noAnim = document.createElement('style');
+      noAnim.textContent = '* { transition: none !important; }';
+      el.shadowRoot.appendChild(noAnim);
+
+      const btn = el.shadowRoot.querySelectorAll('.btn')[1];
+      const read = () => {
+        const cs = getComputedStyle(btn);
+        return `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
+      };
+      const lines = [];
+
+      // light.kueche is off, so the template returns nothing.
+      lines.push('off  -> ' + read());
+
+      // Turn it on: the template now returns a border. .btn transitions
+      // border-color over 180ms, so an immediate read still shows the old
+      // colour - the wait is about measuring, not about the card.
+      const on = { ...hass, states: { ...hass.states,
+        'light.kueche': { entity_id: 'light.kueche', state: 'on', attributes: { friendly_name: 'Küche' } } } };
+      el.hass = on;
+      lines.push('on   -> ' + read());
+
+      setTimeout(() => {
+        el.hass = hass;
+        setTimeout(() => {
+          lines.push('off  -> ' + read() + '   (must match the first line)');
+          const first = el.shadowRoot.querySelectorAll('.btn')[0];
+          const fcs = getComputedStyle(first);
+          lines.push('', 'static style button -> ' +
+            `${fcs.borderTopWidth} ${fcs.borderTopStyle} ${fcs.borderTopColor}`);
+          document.getElementById('border-out').textContent = lines.join('\n');
+        }, 300);
+      }, 300);
+    });
+  },
+
+  accent() {
+    const el = card({
+      items: [
+        { name: 'Standard', entity: 'light.wohnzimmer', icon: 'mdi:sofa' },
+        { name: 'Grün', entity: 'light.bad', icon: 'mdi:shower', active_color: '#5ac26b' },
+        { name: 'Pink', entity: 'light.buero', icon: 'mdi:desk-lamp', active_color: '#ff6b9d' },
+        { name: 'Nach Temperatur', entity: 'sensor.wohnzimmer_temperatur', icon: 'mdi:thermometer',
+          active_color: '[[[ return Number(entity.state) > 20 ? "#ff9f43" : "#54a0ff" ]]]' },
+        { name: 'Aus (kein Akzent)', entity: 'light.kueche', icon: 'mdi:countertop',
+          active_color: '#5ac26b' },
+      ],
+    }, document.getElementById('accent-host'));
+
+    requestAnimationFrame(() => {
+      const rows = [...el.shadowRoot.querySelectorAll('.btn')].map((b) => {
+        const cs = getComputedStyle(b);
+        return `${b.querySelector('.name').textContent.padEnd(20)} ` +
+          `--tsr-accent=${(b.style.getPropertyValue('--tsr-accent') || '(inherited)').padEnd(12)} ` +
+          `active=${b.classList.contains('active')}  ` +
+          `icon=${getComputedStyle(b.querySelector('.icon')).color}  ` +
+          `border=${cs.borderTopColor}  bg=${cs.backgroundColor}`;
+      });
+      document.getElementById('accent-out').textContent = rows.join('\n');
+    });
+  },
+
+  templates() {
+    const el = card({
+      items: [
+        {
+          // The user's own example.
+          name: 'Fenster',
+          entity: 'binary_sensor.fenster',
+          icon: 'mdi:window-open',
+          show_state: true,
+          label: `[[[
+            const offline = entity.attributes.anzahl_nicht_verfuegbar ?? 0;
+            const offen = entity.attributes.anzahl_offen ?? 0;
+            const basis = entity.state === 'on' ? \`\${offen}\` : '';
+            return basis;
+          ]]]`,
+        },
+        {
+          name: '[[[ return "Temp " + states["sensor.wohnzimmer_temperatur"].state + "°" ]]]',
+          entity: 'sensor.wohnzimmer_temperatur',
+          icon: '[[[ return Number(entity.state) > 20 ? "mdi:fire" : "mdi:snowflake" ]]]',
+          icon_color: '[[[ return Number(entity.state) > 20 ? "#ff9f43" : "#54a0ff" ]]]',
+        },
+        {
+          name: 'Eingebettet',
+          entity: 'light.wohnzimmer',
+          label: 'Status: [[[ return entity.state ]]] jetzt',
+          show_state: true,
+        },
+        {
+          // The card_mod case, done with the card's own style field.
+          name: 'Fenster (style)',
+          entity: 'binary_sensor.fenster',
+          icon: 'mdi:window-closed',
+          style: `[[[
+            return entity.attributes.anzahl_nicht_verfuegbar > 0
+              ? 'border: 2px solid #ff5f56'
+              : '';
+          ]]]`,
+        },
+        {
+          name: 'Kaputtes Template',
+          entity: 'light.kueche',
+          label: '[[[ return entity.gibt.es.nicht ]]]',
+          show_state: true,
+        },
+      ],
+    }, document.getElementById('tpl-host'));
+
+    requestAnimationFrame(() => {
+      const out = [...el.shadowRoot.querySelectorAll('.btn')].map((b) => ({
+        name: b.querySelector('.name').textContent,
+        state: b.querySelector('.state').textContent,
+        icon: b.querySelector('.icon')?.getAttribute('icon') || b.querySelector('.icon')?.icon,
+        iconColor: b.style.getPropertyValue('--tsr-icon-color') || '(none)',
+        border: b.style.border || '(none)',
+        attrs: `entity=${b.dataset.entity || '-'} state=${b.dataset.state || '-'}`,
+      }));
+      // What card-mod does: put a <style> into the card's shadow root. The
+      // selector has to be able to single out one button.
+      const injected = document.createElement('style');
+      injected.textContent =
+        '.btn[data-entity="binary_sensor.fenster"][data-state="on"] { outline: 2px dashed #5ac26b; }';
+      el.shadowRoot.appendChild(injected);
+
+      const targeted = [...el.shadowRoot.querySelectorAll('.btn')].filter(
+        (b) => getComputedStyle(b).outlineStyle === 'dashed',
+      ).length;
+      out.push({ name: `-- card_mod selector matched ${targeted} button(s) --`, state: '', icon: '', iconColor: '' });
+
+      document.getElementById('tpl-out').textContent = out
+        .map((o) => o.state === '' && o.icon === ''
+          ? `\n${o.name}`
+          : `${o.name}\n    label="${o.state}"  icon=${o.icon}  colour=${o.iconColor}\n    border=${o.border}  ${o.attrs}`)
+        .join('\n');
+    });
+  },
+
+  visibility() {
+    const buttons = [
+      { name: 'Immer da', icon: 'mdi:home' },
+      { name: 'Nur wenn an', icon: 'mdi:lightbulb',
+        visibility: [{ condition: 'state', entity: 'light.wohnzimmer', state: 'on' }] },
+      { name: 'Nur wenn aus', icon: 'mdi:lightbulb-off',
+        visibility: [{ condition: 'state', entity: 'light.wohnzimmer', state: 'off' }] },
+      { name: 'Warm', icon: 'mdi:thermometer',
+        visibility: [{ condition: 'numeric_state', entity: 'sensor.wohnzimmer_temperatur', above: 20 }] },
+    ];
+
+    const offHass = { ...hass, states: { ...hass.states,
+      'light.wohnzimmer': { entity_id: 'light.wohnzimmer', state: 'off', attributes: { friendly_name: 'Wohnzimmer' } } } };
+
+    const a = card({ items: buttons }, document.getElementById('vis-on'));
+    const b = document.createElement('tessera-card');
+    b.setConfig({ items: buttons });
+    b.hass = offHass;
+    document.getElementById('vis-off').appendChild(b);
+
+    // Every button conditioned on something false -> the card hides itself.
+    const c = document.createElement('tessera-card');
+    c.setConfig({ items: [
+      { name: 'Weg', visibility: [{ condition: 'state', entity: 'light.wohnzimmer', state: 'nope' }] },
+      { name: 'Auch weg', visibility: [{ condition: 'state', entity: 'light.kueche', state: 'nope' }] },
+    ] });
+    c.hass = hass;
+    document.getElementById('vis-none').appendChild(c);
+
+    requestAnimationFrame(() => {
+      const names = (el) => [...el.shadowRoot.querySelectorAll('.btn')]
+        .filter((b) => !b.hidden)
+        .map((b) => b.querySelector('.name').textContent);
+      const rowsOf = (el) => [...el.shadowRoot.querySelectorAll('.row')]
+        .map((r) => [...r.children].filter((x) => !x.hidden).length);
+
+      const before = { names: names(a), rows: rowsOf(a) };
+      // The live case: the same card, a new hass, nothing else touched.
+      a.hass = offHass;
+      const after = { names: names(a), rows: rowsOf(a) };
+
+      document.getElementById('vis-out').textContent =
+        `light on:  ${JSON.stringify(names(b) && before.names)}  rows ${JSON.stringify(before.rows)}\n` +
+        `light off: ${JSON.stringify(after.names)}  rows ${JSON.stringify(after.rows)}\n` +
+        `  -> the SAME card after a hass update, not a second one\n` +
+        `none:      visible buttons ${names(c).length}, host display = ` +
+        `${getComputedStyle(c).display}, host height = ${Math.round(c.getBoundingClientRect().height)}`;
+      // Put it back so the picture matches its caption.
+      a.hass = hass;
+    });
+  },
+
+  colspan() {
+    const buttons = () => [
+      { name: 'Button 1', icon: 'mdi:lightbulb', tap_action: { action: 'none' } },
+      { name: 'Button 2', icon: 'mdi:power', colspan: 2, tap_action: { action: 'none' } },
+      { name: 'Button 3', icon: 'mdi:bed' },
+      { name: 'Button 4', icon: 'mdi:bed', icon_size: 48 },
+      { name: 'Button 5', icon: 'mdi:bed', icon_size: '16px' },
+    ];
+    card({ items: buttons() }, document.getElementById('colspan-auto'));
+    card({
+      layout: { mode: 'grid', columns: 5 },
+      items: [
+        { name: 'Button 1', icon: 'mdi:lightbulb', tap_action: { action: 'none' } },
+        { name: 'Button 2', icon: 'mdi:power', colspan: 2, tap_action: { action: 'none' },
+          animation: { duration: '1s', when: 'always' } },
+        { name: 'Button 3', icon: 'mdi:bed' },
+        { name: 'Button 4', icon: 'mdi:bed', icon_size: 48 },
+        { name: 'Button 5', icon: 'mdi:bed', icon_size: '16px' },
+      ],
+    }, document.getElementById('colspan-host'));
+
+    requestAnimationFrame(() => {
+      const el = document.querySelector('#colspan-host tessera-card');
+      const btns = [...el.shadowRoot.querySelectorAll('.btn')];
+      const wx = btns.map((b) => b.getBoundingClientRect().width);
+      const w = wx.map((n) => Math.round(n));
+      const gap = parseFloat(getComputedStyle(el.shadowRoot.querySelector('.grid')).gap) || 12;
+      const single = w[2]; // a 1-slot button in the second row
+      const expected = Math.round(single * 2 + gap);
+      const rows2 = [...el.shadowRoot.querySelectorAll('.row')].map((r, ri) => {
+        const kids = [...r.children].map((c) => {
+          const cs = getComputedStyle(c);
+          const name = c.querySelector('.name')?.textContent || '?';
+          return `${name}[g${cs.flexGrow} b${cs.flexBasis} pad${cs.paddingLeft} bw${cs.borderLeftWidth}] = ${c.getBoundingClientRect().width.toFixed(2)}`;
+        });
+        return `row${ri} w=${r.getBoundingClientRect().width.toFixed(2)} gap=${getComputedStyle(r).gap}\n    ` + kids.join('\n    ');
+      });
+      const icons = btns.map((b) => {
+        const i = b.querySelector('.icon');
+        const r = i.getBoundingClientRect();
+        return `${Math.round(r.width)}x${Math.round(r.height)}`;
+      });
+      document.getElementById('colspan-out').textContent =
+        rows2.join('\n') + '\n\nicon boxes (3=default, 4=48, 5=16px): ' + icons.join('  ') + '\n\n';
+      const flex = btns.map((b) => {
+        const cs = getComputedStyle(b);
+        return `${cs.flexGrow}/${cs.flexShrink}/${cs.flexBasis}`;
+      });
+      const rowEls = [...el.shadowRoot.querySelectorAll('.row')];
+      const rowW = rowEls.map((r) => Math.round(r.getBoundingClientRect().width));
+      document.getElementById('colspan-out').textContent +=
+        `flex:   ${flex.join('  ')}\n` +
+        `rows:   ${rowW.join(', ')}\n` +
+        `widths: ${w.join(', ')}\n` +
+        `one slot (row 2): ${wx[2].toFixed(2)}\n` +
+        `colspan 2 is:     ${wx[1].toFixed(2)}\n` +
+        `should be:        ${(wx[2] * 2 + gap).toFixed(2)}  (2 x slot + ${gap} gap)\n` +
+        `off by:           ${(wx[1] - (wx[2] * 2 + gap)).toFixed(2)}`;
+    });
+  },
+
+  editor() {
+    const host = document.getElementById('editor-host');
+    const out = document.getElementById('editor-out');
+    const el = document.createElement('tessera-card-editor');
+    el.setConfig({
+      type: 'custom:tessera-card',
+      items: [
+        { name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'light.wohnzimmer' },
+        { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+      ],
+    });
+    el.hass = hass;
+    el.addEventListener('config-changed', (e) => {
+      out.textContent = JSON.stringify(e.detail.config, null, 2);
+      el.setConfig(e.detail.config);
+    });
+    host.appendChild(el);
+    window.__editor = el;
+
+    // Regression check: editing a field must not drop conditions the form
+    // cannot model. Without this the first edit would silently delete them.
+    const probe = document.createElement('tessera-card-editor');
+    probe.setConfig({
+      type: 'custom:tessera-card',
+      // What Home Assistant writes when the card is sized in a section.
+      grid_options: { columns: 'full', rows: 'auto' },
+      items: [{
+        name: 'Bedingt',
+        entity: 'light.kueche',
+        visibility: [{ condition: 'state', entity: 'light.wohnzimmer', state: 'on' }],
+        icon: { on: 'mdi:lightbulb', off: 'mdi:lightbulb-outline' },
+      }],
+    });
+    probe.hass = hass;
+    document.body.appendChild(probe);
+    let kept = null;
+    probe.addEventListener('config-changed', (e) => { kept = e.detail.config.items[0]; });
+    requestAnimationFrame(() => {
+      probe.shadowRoot.querySelector('.row-label').click();
+      const nameInput = probe.shadowRoot.querySelector('label[data-path="name"] input');
+      nameInput.value = 'Umbenannt';
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      const out = document.getElementById('editor-out');
+      const full = probe._config;
+      const lines = [
+        'grid_options after an edit: ' + JSON.stringify(full.grid_options),
+        '',
+        'rename keeps what the form cannot model:',
+        JSON.stringify(kept, null, 2)];
+
+      // Now drive the conditions editor itself.
+      setTimeout(() => {
+        const sr = probe.shadowRoot;
+        const ed = sr.querySelector('ha-card-conditions-editor');
+        if (!ed) {
+          lines.push('', 'conditions editor: not available -> fallback note shown');
+          lines.push(sr.querySelector('.note')?.textContent || '(no note!)');
+        } else {
+          const startCount = ed.conditions.length;
+          ed.querySelector('.cond-add').click();
+          const added = kept && kept.visibility ? kept.visibility.length : 0;
+          // HA's editor is controlled: it only shows what it is handed back.
+          const shown = ed.querySelectorAll('.cond').length;
+          // Remove every condition -> visibility must disappear entirely.
+          let guard = 0;
+          while (sr.querySelector('.cond button') && guard++ < 10) {
+            sr.querySelector('.cond button').click();
+          }
+          lines.push('',
+            `conditions editor: mounted, started with ${startCount}`,
+            `after + add condition: ${added} in the config, ${shown} shown in the editor`,
+            `after removing all: visibility key = ${JSON.stringify(kept.visibility)}`,
+            `full button: ${JSON.stringify(kept)}`);
+        }
+        out.textContent = lines.join('\n');
+        probe.remove();
+      }, 50);
+    });
+
+    // A second editor, parked on a button's sub-page, so one image shows both.
+    const subHost = document.getElementById('editor-sub');
+    const sub = document.createElement('tessera-card-editor');
+    sub.setConfig({
+      type: 'custom:tessera-card',
+      items: [{ name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' }],
+    });
+    sub.hass = hass;
+    subHost.appendChild(sub);
+    requestAnimationFrame(() => {
+      sub.shadowRoot.querySelector('.row-label').click();
+      // Flip it into YAML mode, the way the {} button does.
+      sub.shadowRoot.querySelector('.yaml-toggle').click();
+
+      // And check the write-back: edit the YAML, see it reach the config.
+      setTimeout(() => {
+        const area = sub.shadowRoot.querySelector('.yaml-area');
+        const results = [];
+        if (!area) {
+          results.push('yaml editor: NOT mounted');
+        } else {
+          let last = null;
+          sub.addEventListener('config-changed', (e) => { last = e.detail.config.items[0]; });
+
+          area.value = JSON.stringify({ name: 'Aus YAML', entity: 'light.bad', icon: 'mdi:shower' });
+          area.dispatchEvent(new Event('input', { bubbles: true }));
+          results.push('after valid edit:   ' + JSON.stringify(last));
+
+          const before = JSON.stringify(last);
+          area.value = '{ this is not valid';
+          area.dispatchEvent(new Event('input', { bubbles: true }));
+          results.push('after invalid edit: ' + (JSON.stringify(last) === before
+            ? 'unchanged (correct)' : 'CHANGED - bug'));
+        }
+        const out = document.getElementById('editor-out');
+        out.textContent = 'YAML mode\n' + results.join('\n') + '\n\n' + out.textContent;
+      }, 80);
+    });
+  },
+
+  constrained() {
+    // Exactly what getStubConfig() produces - the config the user tested.
+    const stub = () => ({
+      items: [
+        { name: 'Button 1', icon: 'mdi:lightbulb', tap_action: { action: 'none' } },
+        { name: 'Button 2', icon: 'mdi:power', tap_action: { action: 'none' } },
+      ],
+    });
+    // Size the cells the way Home Assistant's sections grid would, from the
+    // card's own answer - so this shows the real case, not invented numbers.
+    const rowPx = (rows) => rows * 56 + (rows - 1) * 8;
+    const probe = card(stub(), document.getElementById('con-a'));
+    const opts = probe.getGridOptions();
+    document.getElementById('con-a').style.height = rowPx(opts.rows) + 'px';
+    document.getElementById('con-c').style.height = rowPx(opts.min_rows) + 'px';
+    document.querySelector('#scene-constrained .caption').textContent =
+      `the cell the card asks for (rows ${opts.rows})`;
+    document.querySelectorAll('#scene-constrained .caption')[2].textContent =
+      `a cell dragged to min_rows (${opts.min_rows})`;
+
+    card(stub(), document.getElementById('con-b'));
+    card(stub(), document.getElementById('con-c'));
+
+    // Print the measured geometry under each card, so the screenshot itself
+    // shows whether the host honours the height it was given.
+    requestAnimationFrame(() => {
+      for (const id of ['con-a', 'con-b', 'con-c']) {
+        const host = document.getElementById(id);
+        const el = host.querySelector('tessera-card');
+        const p = host.getBoundingClientRect();
+        const h = el.getBoundingClientRect();
+        const overflow = Math.round(h.bottom - p.bottom);
+        const out = document.createElement('p');
+        out.className = 'measure';
+        out.textContent =
+          `container ${Math.round(p.height)} · host ${Math.round(h.height)} · ` +
+          (overflow > 0 ? `overflows ${overflow}` : overflow < 0 ? `gap ${-overflow}` : 'exact');
+        out.style.color = overflow === 0 ? '#5ac26b' : '#ff5f56';
+        host.after(out);
+      }
+    });
+  },
+
+  compact() {
+    const many = [
+      ...BUTTON_POOL,
+      { name: 'Außen', icon: 'mdi:thermometer', entity: 'sensor.aussen_temperatur' },
+      { name: 'Luft', icon: 'mdi:water-percent', entity: 'sensor.luftfeuchte' },
+    ];
+    card({ layout: { column_width: 120 }, items: many }, document.getElementById('compact-a'));
+    card({ layout: { column_width: 120 }, items: many }, document.getElementById('compact-b'));
+  },
+
+  animations() {
+    const types = ['pulse', 'breathe', 'bounce', 'spin', 'shake', 'glow', 'blink', 'wobble'];
+    card({
+      items: types.map((type) => ({
+        name: type,
+        icon: 'mdi:lightbulb',
+        entity: 'light.wohnzimmer',
+        animation: { type, when: 'always', duration: '2s' },
+      })),
+    }, document.getElementById('anim-host'));
+  },
+
+  landscape() {
+    card({
+      items: [
+        { name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'light.wohnzimmer' },
+        { name: 'Küche', icon: 'mdi:countertop', entity: 'light.kueche' },
+        { name: 'Bad', icon: 'mdi:shower', entity: 'light.bad' },
+        { name: 'Schlafzimmer', icon: 'mdi:bed', entity: 'light.schlafzimmer' },
+        { name: 'Sonos', icon: 'mdi:speaker', entity: 'media_player.wohnzimmer', show_state: true,
+          animation: { type: 'pulse', when: 'playing', duration: '2s', intensity: 0.6 } },
+        { name: 'Heizung', icon: 'mdi:radiator', entity: 'climate.wohnzimmer', show_state: true },
+        { name: 'Rolladen', icon: 'mdi:window-shutter', entity: 'cover.rolladen_wohnzimmer', show_state: true },
+        { name: 'Staubsauger', icon: 'mdi:robot-vacuum', entity: 'vacuum.staubsauger', show_state: true },
+        { name: 'Defekt', icon: 'mdi:alert', entity: 'sensor.kaputt', show_state: true },
+        { name: 'Fehlt', icon: 'mdi:help', entity: 'light.gibt_es_nicht' },
+      ],
+    }, document.getElementById('landscape-host'));
+  },
+};
+
+const name = new URLSearchParams(location.search).get('scene') || 'overview';
+document.getElementById(`scene-${name}`).classList.add('active');
+SCENES[name]();
+document.body.dataset.ready = 'true';
+// For tools/screenshots.sh: the body height at the current width, once the
+// layout has settled - what a window size in the recipe has to match.
+setTimeout(() => {
+  document.body.dataset.height = String(Math.ceil(document.body.getBoundingClientRect().height));
+}, 300);
+</script>
+</body>
+</html>

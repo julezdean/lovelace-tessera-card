@@ -1,0 +1,55 @@
+{
+  "name": "lovelace-tessera-card",
+  "version": "1.0.0",
+  "description": "Buttons, countdowns, progress rings and graphs in one mosaic grid for Home Assistant, tuned for wall-mounted dashboards",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julezdean/lovelace-tessera-card.git"
+  },
+  "homepage": "https://github.com/julezdean/lovelace-tessera-card#readme",
+  "bugs": {
+    "url": "https://github.com/julezdean/lovelace-tessera-card/issues"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "watch": "vite build --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test --ext .ts,.js",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "check": "npm run format:check && npm run lint && npm run build && npm test",
+    "screenshots": "npm run build && ./tools/screenshots.sh",
+    "icons": "node tools/build-demo-icons.js"
+  },
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@mdi/js": "^7.4.47",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^3.0.0",
+    "yaml": "^2.9.1"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "lovelace-card",
+    "hacs",
+    "dashboard",
+    "wall-panel",
+    "mosaic",
+    "grid",
+    "buttons",
+    "countdown",
+    "timer",
+    "progress",
+    "graph",
+    "sparkline"
+  ]
+}

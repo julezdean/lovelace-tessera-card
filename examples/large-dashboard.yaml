@@ -1,0 +1,77 @@
+# Large wall-mounted dashboard - ten buttons on a landscape tablet.
+#
+# Two things are tuned for a big panel:
+#   - column_width is raised so the card produces fewer, larger columns
+#   - max_button_size is raised so the buttons may grow taller
+#
+# "Alles aus" spans two slots and asks for confirmation: the first tap arms the
+# button, a second tap within four seconds runs the service call.
+
+type: custom:tessera-card
+title: Erdgeschoss
+
+layout:
+  mode: auto
+  column_width: 200
+  max_columns: 5
+  max_button_size: 190
+  gap: 14
+
+appearance:
+  radius: 26
+  padding: 16
+
+items:
+  - name: Alles aus
+    icon: mdi:power
+    colspan: 2
+    tap_action:
+      action: call-service
+      service: homeassistant.turn_off
+      target:
+        entity_id: group.alle_lichter
+      confirmation:
+        text: Nochmal tippen
+
+  - name: Wohnzimmer
+    icon: mdi:sofa
+    entity: light.wohnzimmer
+
+  - name: Küche
+    icon: mdi:countertop
+    entity: light.kueche
+
+  - name: Esszimmer
+    icon: mdi:table-chair
+    entity: light.esszimmer
+
+  - name: Flur
+    icon: mdi:door-open
+    entity: light.flur
+
+  - name: Bad
+    icon: mdi:shower
+    entity: light.bad
+
+  - name: Büro
+    icon: mdi:desk-lamp
+    entity: light.buero
+
+  - name: Terrasse
+    icon: mdi:string-lights
+    entity: switch.terrasse
+
+  - name: Haustür
+    icon:
+      locked: mdi:lock
+      unlocked: mdi:lock-open-variant
+    entity: lock.haustuer
+    show_state: true
+    # Locks are deliberately not toggled by a stray tap.
+    tap_action:
+      action: more-info
+    hold_action:
+      action: call-service
+      service: lock.unlock
+      target:
+        entity_id: lock.haustuer

@@ -1,0 +1,63 @@
+name: Release
+
+# Runs after `gh release create`, which is the last step of the release flow.
+# The built card is not committed, so without this a release would carry no
+# asset -- and HACS looks at the release assets first (hacs/integration,
+# repositories/plugin.py).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # A tag is spent once pushed, so the mismatch has to be caught here
+      # rather than after someone installs the wrong version.
+      - name: Tag and package version must agree
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          tag_version="${tag#v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Tag $tag says $tag_version, package.json says $pkg_version."
+            exit 1
+          fi
+          echo "Version $pkg_version"
+
+      - run: npm run check
+
+      # Proves the version reached the artefact, not just the manifest: the
+      # card logs it at load time and that string is how anyone diagnoses
+      # which build a browser is actually running.
+      - name: The version must be inside the bundle
+        run: |
+          pkg_version="$(node -p "require('./package.json').version")"
+          bundle="$(node -p "require('./hacs.json').filename")"
+          if ! grep -q "\"$pkg_version\"" "dist/$bundle"; then
+            echo "::error::dist/$bundle does not contain $pkg_version."
+            exit 1
+          fi
+          echo "dist/$bundle carries $pkg_version"
+
+      - name: Attach the bundle to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bundle="$(node -p "require('./hacs.json').filename")"
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "dist/$bundle" --clobber

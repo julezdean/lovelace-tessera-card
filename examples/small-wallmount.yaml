@@ -1,0 +1,25 @@
+# Small wall-mounted dashboard - three buttons.
+#
+# Nothing is configured beyond the buttons themselves: the layout engine picks
+# two columns and puts the third button across the full width of the second row.
+# Tap toggles, hold opens more-info - both are defaults, not written out here.
+
+type: custom:tessera-card
+title: Wohnzimmer
+
+items:
+  - name: Deckenlicht
+    icon: mdi:ceiling-light
+    entity: light.wohnzimmer_decke
+
+  - name: Stehlampe
+    icon: mdi:floor-lamp
+    entity: light.wohnzimmer_stehlampe
+
+  - name: Gute Nacht
+    icon: mdi:weather-night
+    tap_action:
+      action: call-service
+      service: scene.turn_on
+      target:
+        entity_id: scene.gute_nacht

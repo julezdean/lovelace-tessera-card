@@ -1,0 +1,99 @@
+# Mixed dashboard - entities, navigation, service calls and animations.
+#
+# The card-level animation block is the default for every button; buttons
+# override the type and keep the inherited duration.
+
+type: custom:tessera-card
+
+layout:
+  mode: auto
+  gap: 12
+
+appearance:
+  radius: 24
+
+animation:
+  type: breathe
+  duration: 3s
+  intensity: 0.7
+
+items:
+  # State-dependent icon, animation only while the light is on.
+  - name: Wohnzimmer
+    icon:
+      "on": mdi:lightbulb
+      "off": mdi:lightbulb-outline
+    entity: light.wohnzimmer
+    tap_action:
+      action: toggle
+    hold_action:
+      action: more-info
+
+  # Pulses only while the machine is running, and says so underneath.
+  - name: Waschmaschine
+    icon: mdi:washing-machine
+    entity: binary_sensor.waschmaschine
+    show_state: true
+    state_display: "{{state}}"
+    animation:
+      type: pulse
+      when: "on"
+      duration: 2.4s
+
+  # Numeric condition: the icon glows once it gets genuinely warm.
+  - name: Wohnzimmer
+    icon: mdi:thermometer
+    entity: sensor.wohnzimmer_temperatur
+    show_state: true
+    animation:
+      type: glow
+      when:
+        above: 24
+
+  # Spins while the vacuum is actually cleaning.
+  - name: Staubsauger
+    icon: mdi:robot-vacuum
+    entity: vacuum.staubsauger
+    show_state: true
+    animation:
+      type: spin
+      when: cleaning
+      duration: 4s
+    tap_action:
+      action: call-service
+      service: vacuum.start
+      target:
+        entity_id: vacuum.staubsauger
+
+  # Media player: double tap skips, hold opens more-info.
+  - name: Sonos
+    icon: mdi:speaker
+    entity: media_player.wohnzimmer
+    show_state: true
+    tap_action:
+      action: call-service
+      service: media_player.media_play_pause
+      target:
+        entity_id: media_player.wohnzimmer
+    double_tap_action:
+      action: call-service
+      service: media_player.media_next_track
+      target:
+        entity_id: media_player.wohnzimmer
+    hold_action:
+      action: more-info
+
+  # Navigation inside the dashboard - no entity, so no state and no animation.
+  - name: Heizung
+    icon: mdi:radiator
+    tap_action:
+      action: navigate
+      navigation_path: /lovelace/klima
+
+  # External link, full width at the bottom.
+  - name: Kamera
+    icon: mdi:cctv
+    colspan: 2
+    tap_action:
+      action: url
+      url_path: https://frigate.local

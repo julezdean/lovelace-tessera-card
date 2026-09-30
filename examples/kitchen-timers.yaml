@@ -1,0 +1,52 @@
+# Timers and machines next to the kitchen light: the four progress types in
+# one card, each where a button would be.
+type: custom:tessera-card
+title: Küche
+
+# Every ring the same: a little thicker, and red in the last half minute.
+ring:
+  thickness: 12
+  colors:
+    basis: remaining_seconds
+    thresholds:
+      - { value: 0, color: red }
+      - { value: 30, color: amber }
+
+items:
+  # A timer helper. Holding cancels it, after a second hold to confirm.
+  - type: ring
+    entity: timer.kaffee
+    icon: mdi:coffee
+    hold_action:
+      action: perform-action
+      perform_action: timer.cancel
+      target: { entity_id: timer.kaffee }
+      confirmation: true
+    animation: { type: pulse, when: finishing, duration: 1.6s }
+    # Shown only while it runs or is paused.
+    visibility:
+      - condition: state
+        entity: timer.kaffee
+        state_not: idle
+
+  # A sensor reporting the minutes left; the programme takes about two hours.
+  - type: bar
+    entity: sensor.waschmaschine_restzeit
+    icon: mdi:washing-machine
+    progress: { window: 2h }
+
+  - name: Licht
+    icon: mdi:ceiling-light
+    entity: light.kueche
+
+  - type: segments
+    entity: sensor.handy_akku
+    icon: mdi:cellphone
+    segments: 5
+
+  # A timestamp: when the oven will be done. Afterwards it counts the time since.
+  - type: digits
+    entity: sensor.backofen_fertig
+    progress: { window: 45m }
+    on_complete: count_up
+    label: "fertig um {{end_time}}"

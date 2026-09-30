@@ -1,0 +1,41 @@
+# Graphs next to a light: the last day of the living room against outside,
+# humidity coloured by value, and power as bars with its peak.
+type: custom:tessera-card
+title: Klima
+
+items:
+  # Two lines in one graph want the room of two slots.
+  - type: graph
+    entity: sensor.wohnzimmer_temperatur
+    icon: mdi:thermometer
+    colspan: 2
+    lines:
+      - entity: sensor.aussen_temperatur
+
+  - name: Licht
+    icon: mdi:ceiling-light
+    entity: light.wohnzimmer
+
+  - type: graph
+    entity: sensor.luftfeuchte
+    icon: mdi:water-percent
+    colors:
+      thresholds:
+        - { value: 40, color: amber }
+        - { value: 50, color: blue }
+
+  # Two-hour bars; the state line says the current value and the peak.
+  - type: graph
+    entity: sensor.leistung
+    icon: mdi:flash
+    graph: bar
+    points_per_hour: 0.5
+    label: "{{value}} · max {{max}}"
+
+  # A soft floor: 18 °C unless it gets colder than that.
+  - type: graph
+    entity: sensor.flur_temperatur
+    icon: mdi:thermometer
+    graph_layout: background
+    lower_bound: "~18"
+    min_bound_range: 3
