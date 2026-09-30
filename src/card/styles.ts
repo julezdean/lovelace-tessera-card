@@ -227,6 +227,12 @@ ha-card.card {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  /* A word too long for the cell is split at a syllable, in the page's
+     language - Home Assistant sets it - rather than anywhere: "Wohnzim-mer",
+     not "Wohnzimm / er". Where the browser knows no hyphenation for the
+     language, break-word still keeps the word inside the cell. */
+  -webkit-hyphens: auto;
+  hyphens: auto;
   overflow-wrap: break-word;
 }
 

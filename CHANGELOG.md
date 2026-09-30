@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-30
+
+### Fixed
+
+- A name too long for its cell was split anywhere in the word -
+  "Wohnzimm / er" - which shows most with a large `name_size`. It is now
+  hyphenated at a syllable, in the language Home Assistant sets for the page.
+
 ## [1.1.0] - 2026-09-30
 
 ### Changed

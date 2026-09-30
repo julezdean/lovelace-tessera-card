@@ -76,7 +76,7 @@ Adding it by hand instead:
    - Type: **JavaScript module**
 3. Reload the browser
 
-Confirm it loaded: the browser console prints `tessera-card v1.1.0` on
+Confirm it loaded: the browser console prints `tessera-card v1.1.1` on
 startup.
 
 ---
@@ -184,7 +184,9 @@ width, where stacking gives it all of it. Horizontal earns its place on buttons 
 card cannot tell those apart, since the height it works from is derived from
 the width.
 
-Names wrap onto a second line rather than being cut off. Below 74 px of column
+Names wrap onto a second line rather than being cut off, and a word too long
+for the cell is split at a syllable in the page's language — Home Assistant
+sets it — so it reads "Wohnzim-mer", not "Wohnzimm / er". Below 74 px of column
 width the text is dropped entirely and only the icon remains.
 
 Within a row, all buttons reserve room for the state line as soon as one of them
