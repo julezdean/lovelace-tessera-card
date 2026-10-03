@@ -8,6 +8,7 @@ import {
   animationActive,
   isActiveState,
   isUnavailable,
+  isFaultState,
   computeGridOptions,
   computeContentHeight,
 } from '../src/main.ts';
@@ -228,6 +229,17 @@ test('a button that was never pressed is usable, not unavailable', () => {
   assert.equal(isUnavailable({ ...fresh, state: 'unavailable' }), true);
   // Everywhere else unknown still means unavailable.
   assert.equal(isUnavailable({ entity_id: 'light.a', state: 'unknown', attributes: {} }), true);
+});
+
+test('a device in error is a fault, not active', () => {
+  // Valetudo and HA report a stuck vacuum as state error; it must not light
+  // up like a cleaning one.
+  const stuck = { entity_id: 'vacuum.staubsauger', state: 'error', attributes: {} };
+  assert.equal(isActiveState(stuck), false);
+  assert.equal(isFaultState(stuck), true);
+  assert.equal(isUnavailable(stuck), false);
+  assert.equal(isFaultState({ ...stuck, state: 'cleaning' }), false);
+  assert.equal(isFaultState(undefined), false);
 });
 
 test('an animation on active follows the activity the card passes in', () => {

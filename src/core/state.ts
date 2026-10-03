@@ -14,10 +14,19 @@ const INACTIVE_STATES = new Set([
   'unavailable',
   'unknown',
   'none',
+  // A fault is not "doing something": the cell shows it as a fault instead.
+  'error',
   '',
 ]);
 
 const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
+
+/**
+ * States in which the device reports a fault of its own - a vacuum stuck
+ * under the sofa, a mower off its boundary. Unlike `unavailable` the entity is
+ * there and talking; it needs a person, not a restart.
+ */
+const FAULT_STATES = new Set(['error']);
 
 /**
  * Domains that have no on/off, only moments: their state is the timestamp of
@@ -69,6 +78,10 @@ export function isUnavailable(stateObj: HassEntity | undefined): boolean {
   if (!stateObj) return true;
   if (isStateless(stateObj)) return stateObj.state === 'unavailable';
   return UNAVAILABLE_STATES.has(stateObj.state);
+}
+
+export function isFaultState(stateObj: HassEntity | undefined): boolean {
+  return !!stateObj && FAULT_STATES.has(String(stateObj.state).toLowerCase());
 }
 
 /** HA's notion of "this thing is doing something right now". */

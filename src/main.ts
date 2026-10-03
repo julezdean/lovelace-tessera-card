@@ -91,7 +91,7 @@ export { normalizeConfig } from './config';
 export { renderTemplate, hasTemplate, templateContext } from './core/templates';
 export { isVisible, conditionMet, collectMediaQueries } from './core/visibility';
 export { animationActive } from './core/animation';
-export { isActiveState, isUnavailable } from './core/state';
+export { isActiveState, isFaultState, isUnavailable } from './core/state';
 export {
   computeGridOptions,
   computeContentHeight,

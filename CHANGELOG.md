@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- An entity in the state `error` - a vacuum stuck somewhere - showed the
+  active accent, as if it were cleaning. It now gets a red dashed outline and
+  no longer counts as active.
+
 ## [1.1.1] - 2026-09-30
 
 ### Fixed

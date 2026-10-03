@@ -194,6 +194,13 @@ ha-card.card {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--tsr-warn) 55%, transparent);
 }
+/* The device reports a fault (a vacuum in state error). Full strength, unlike
+   the faded outline of a misconfigured item: this one needs someone to act.
+   After .btn.active, so an active_when that forces it on cannot hide it. */
+.btn.fault {
+  border-style: dashed;
+  border-color: var(--tsr-warn);
+}
 
 /* Two-step confirmation: the armed state must be unmistakable. */
 .btn.armed {

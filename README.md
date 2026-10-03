@@ -1049,6 +1049,11 @@ Nothing depends on hover.
 light and dark themes both work. Every `color-mix()` has a plain `rgba()`
 fallback in front of it for the older webviews found on wall tablets.
 
+**Faults.** An entity in the state `error` — a vacuum stuck under the sofa, a
+mower off its boundary — gets a red dashed outline instead of the active one. It
+is not counted as active, so it does not light up like a running device either;
+`active_when` can still force that, but the red outline stays.
+
 **Errors.** A misconfigured button shows a dashed outline; the rest of the card
 keeps working, and so does an item of a type the card does not know. A card
 without `items` shows a readable error instead of a blank space.

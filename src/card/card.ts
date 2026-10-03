@@ -21,7 +21,7 @@ import {
   isStrictGrid,
   partitionRows,
 } from '../core/layout';
-import { isActiveState, isStateless, isUnavailable } from '../core/state';
+import { isActiveState, isFaultState, isStateless, isUnavailable } from '../core/state';
 import { identity, renderTemplate, templateContext } from '../core/templates';
 import { collectMediaQueries, isVisible } from '../core/visibility';
 import { sharedTicker } from '../progress/ticker';
@@ -650,6 +650,9 @@ export class TesseraCard extends BaseElement {
       sync.active ? 1 : 0,
       unavailable ? 1 : 0,
       missing ? 1 : 0,
+      // Not implied by the view: a button without a state line renders the
+      // same text for docked and error.
+      isFaultState(stateObj) ? 1 : 0,
       style || '',
       // Template results belong in the signature, so a card whose templates
       // keep returning the same thing still writes nothing to the DOM.
@@ -803,6 +806,8 @@ export class TesseraCard extends BaseElement {
     root.classList.toggle('active', sync.active);
     root.classList.toggle('no-icon', !truthy(sync.resolve(item.show_icon) ?? true));
     root.classList.toggle('unavailable', sync.unavailable && !sync.missing);
+    // Named fault, not error: .error is the card's own config error box.
+    root.classList.toggle('fault', isFaultState(sync.stateObj));
     root.classList.toggle('invalid', sync.missing || !!item.error);
 
     // Mirrored onto the element so a stylesheet can react to them.
