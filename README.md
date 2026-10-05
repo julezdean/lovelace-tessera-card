@@ -76,7 +76,7 @@ Adding it by hand instead:
    - Type: **JavaScript module**
 3. Reload the browser
 
-Confirm it loaded: the browser console prints `tessera-card v1.1.1` on
+Confirm it loaded: the browser console prints `tessera-card v1.2.0-beta.1` on
 startup.
 
 ---
