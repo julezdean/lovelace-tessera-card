@@ -5,9 +5,10 @@ import { normalizeProgress, PROGRESS_DEFAULTS, TYPE_DEFAULTS } from '../../progr
 import { engineEnv, evaluate, type ProgressView } from '../../progress/engine';
 import { readSnapshot } from '../../progress/sources';
 import type { ProgressItem } from '../../progress/types';
-import type { Dict, HassEntity, HomeAssistant } from '../../types';
+import type { Dict, HassEntity } from '../../types';
 import { cssLength } from '../../utils';
 import { resolveIcon, resolveName } from '../button/button';
+import { paintIcon as paintGlyph, resolvePicture, type IconElement } from '../icon';
 import type { CellParts, ItemType, SyncContext } from '../item-type';
 import { progressEditor } from './editor';
 import { PROGRESS_STYLES } from './styles';
@@ -32,6 +33,7 @@ export interface ItemView {
   name: string;
   showName: boolean;
   icon: string | null;
+  picture: string | null;
   /** What the state line says. */
   line: string;
   /** ring: what is in the middle, after `inner: auto` has been decided. */
@@ -106,6 +108,7 @@ function progressView(
     name: resolveName(item, stateObj, resolve),
     showName: item.show_name === false ? false : resolve(item.show_name) !== false,
     icon: resolveIcon(item, stateObj, resolve),
+    picture: resolvePicture(item, stateObj, resolve),
     line,
     inner,
     showDrawing,
@@ -187,45 +190,22 @@ function paintShared(parts: ProgressParts, item: ProgressItem, view: ItemView): 
   root.setAttribute('aria-label', label || item.type);
 }
 
-type StateIcon = HTMLElement & { icon?: string; hass?: HomeAssistant; stateObj?: HassEntity };
+type StateIcon = IconElement;
 
-/** An icon, as a button draws it: its own, or the one Home Assistant picks. */
-function iconElement(
+/** The icon, as a button draws it, made the first time a drawing needs it. */
+function paintIcon(
   parts: { iconEl?: StateIcon },
   host: HTMLElement,
   className: string,
-): StateIcon {
+  view: ItemView,
+  context: SyncContext,
+): void {
   if (!parts.iconEl) {
     parts.iconEl = document.createElement('ha-icon') as StateIcon;
     parts.iconEl.className = className;
     host.appendChild(parts.iconEl);
   }
-  return parts.iconEl;
-}
-
-function paintIcon(
-  parts: { iconEl?: StateIcon },
-  host: HTMLElement,
-  className: string,
-  icon: string | null,
-  context: SyncContext,
-): void {
-  const wantsState = !icon && !!context.stateObj;
-  const tag = wantsState ? 'ha-state-icon' : 'ha-icon';
-  let el = iconElement(parts, host, className);
-  if (el.tagName.toLowerCase() !== tag) {
-    const next = document.createElement(tag) as StateIcon;
-    next.className = el.className;
-    el.replaceWith(next);
-    parts.iconEl = next;
-    el = next;
-  }
-  if (wantsState) {
-    el.hass = context.hass;
-    el.stateObj = context.stateObj;
-  } else {
-    el.icon = icon || (context.missing ? 'mdi:alert-circle-outline' : 'mdi:progress-clock');
-  }
+  paintGlyph(parts, 'iconEl', view, context, 'mdi:progress-clock');
 }
 
 function makeType<P extends ProgressParts>(
@@ -402,7 +382,7 @@ const ring: Drawing<RingParts> = {
       ? `${ringFontSize(item, text, context.geometry.visualSize)}px`
       : '';
     if (view.inner === 'icon') {
-      paintIcon(parts, parts.inner, 'inner-icon', view.icon, context);
+      paintIcon(parts, parts.inner, 'inner-icon', view, context);
       (parts.iconEl as StateIcon).style.display = '';
     } else if (parts.iconEl) {
       parts.iconEl.style.display = 'none';
@@ -482,7 +462,7 @@ function barDrawing(segmented: boolean): Drawing<BarParts> {
       return { ...parts, fills };
     },
     paint(parts, item, view, context) {
-      paintIcon(parts, parts.visual, 'icon', view.icon, context);
+      paintIcon(parts, parts.visual, 'icon', view, context);
       const fraction = view.p.progress ?? 1;
       const shares = segmented ? segmentFills(fraction, parts.fills.length) : [fraction];
       // A segment's moving edge is cut straight: a rounded cut inside a
@@ -534,7 +514,7 @@ const digits: Drawing<DigitParts> = {
     const { p } = view;
     // Without its drawing, the icon stands where the digits would.
     if (!view.showDrawing) {
-      paintIcon(parts, parts.visual, 'icon', view.icon, context);
+      paintIcon(parts, parts.visual, 'icon', view, context);
       (parts.iconEl as StateIcon).style.display = '';
       parts.row.style.display = 'none';
       parts.text.style.display = 'none';

@@ -108,6 +108,17 @@ export const SIZE_FIELDS = [
 /** Whether the icon is shown, next to show_name in every type's display section. */
 export const SHOW_ICON_FIELD = { name: 'show_icon', selector: { boolean: {} } };
 
+export const SHOW_ENTITY_PICTURE_FIELD = {
+  name: 'show_entity_picture',
+  selector: { boolean: {} },
+};
+
+/** The switch, and the picture an item brings itself instead of its entity's. */
+export const PICTURE_FIELDS = [
+  SHOW_ENTITY_PICTURE_FIELD,
+  { name: 'entity_picture', selector: { text: {} } },
+];
+
 export const ICON_COLOR_FIELD = { name: 'icon_color', selector: { text: {} } };
 
 /** Labels, so the form does not show raw config keys. */
@@ -137,6 +148,8 @@ export const LABELS: Record<string, string> = {
   label_size: 'Second line size (px)',
   label_weight: 'Second line weight',
   show_icon: 'Show icon',
+  show_entity_picture: 'Show picture instead of icon',
+  entity_picture: "Picture (path or URL, else the entity's)",
   show_name: 'Show name',
   show_state: 'Show state',
   press_effect: 'Press effect',

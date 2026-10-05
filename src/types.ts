@@ -11,6 +11,8 @@ export interface HassEntity {
   attributes: Dict & {
     friendly_name?: string;
     icon?: string;
+    entity_picture?: string;
+    entity_picture_local?: string;
     unit_of_measurement?: string;
   };
   last_changed?: string;
@@ -29,6 +31,8 @@ export interface HomeAssistant {
   config?: { time_zone: string };
   callService(domain: string, service: string, data?: Dict, target?: unknown): unknown;
   formatEntityState?: (stateObj: HassEntity, state?: string) => string;
+  /** A path relative to Home Assistant, as an absolute URL. */
+  hassUrl?: (path?: string) => string;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -118,6 +122,12 @@ export interface ItemBase {
   label_weight: unknown;
   /** false leaves the icon out, and its room with it. */
   show_icon: unknown;
+  /**
+   * A picture in place of the icon: `entity_picture`, or the entity's own.
+   * Off unless asked for, as in button-card.
+   */
+  show_entity_picture: unknown;
+  entity_picture: unknown;
   icon_size: unknown;
   icon_color: unknown;
   press_effect: string;

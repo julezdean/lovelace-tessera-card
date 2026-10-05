@@ -309,6 +309,14 @@ export const CARD_STYLES_TAIL = `
   75%      { transform: rotate(calc(7deg * var(--tsr-anim-i))); }
 }
 
+/* --- show_entity_picture ---------------------------------------------------- */
+/* A picture in the icon's box: fitted, not cropped - a flag keeps its
+   corners. Its own colours stay; icon_color has no glyph to colour. */
+img.picture {
+  display: block;
+  object-fit: contain;
+}
+
 /* --- show_icon: false ------------------------------------------------------ */
 /* The icon and its room go; name and state line move to the middle. */
 .btn.no-icon > .icon,

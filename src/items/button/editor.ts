@@ -4,6 +4,7 @@ import {
   ACTIVE_WHEN_FIELD,
   ANIMATION_SCHEMA,
   LAYOUT_SELECT,
+  PICTURE_FIELDS,
   SHOW_ICON_FIELD,
   SIZE_FIELDS,
 } from '../../editor/schema';
@@ -38,6 +39,7 @@ const BUTTON_SCHEMA = [
       LAYOUT_SELECT,
       { name: 'show_name', selector: { boolean: {} } },
       SHOW_ICON_FIELD,
+      ...PICTURE_FIELDS,
       {
         name: 'show_state',
         selector: {
@@ -96,6 +98,8 @@ export const BUTTON_FORM_KEYS = [
   'active_background',
   'show_name',
   'show_icon',
+  'show_entity_picture',
+  'entity_picture',
   'name_size',
   'name_weight',
   'label_weight',

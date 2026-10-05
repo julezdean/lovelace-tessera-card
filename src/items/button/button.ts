@@ -3,7 +3,8 @@ import { formatState, VALUE_DOMAINS } from '../../core/state';
 import { hasTemplate, identity, type Resolve } from '../../core/templates';
 import type { AnimationConfig, Dict, HassEntity, HomeAssistant, ItemBase } from '../../types';
 import { domainOf } from '../../utils';
-import type { CellParts, ItemType, SyncContext } from '../item-type';
+import { paintIcon, resolvePicture, type IconElement } from '../icon';
+import type { CellParts, ItemType } from '../item-type';
 import { buttonEditor } from './editor';
 import { BUTTON_STYLES } from './styles';
 
@@ -20,13 +21,13 @@ export interface ButtonItem extends ItemBase {
 }
 
 export interface ButtonParts extends CellParts {
-  icon: HTMLElement & { icon?: string; hass?: HomeAssistant; stateObj?: HassEntity };
+  icon: IconElement;
   name: HTMLElement;
-  iconTag: 'ha-icon' | 'ha-state-icon';
 }
 
 interface ButtonView {
   icon: string | null;
+  picture: string | null;
   name: string;
   secondary: string;
   animate: boolean;
@@ -200,7 +201,7 @@ export const buttonType: ItemType<ButtonItem, ButtonParts, ButtonView> = {
     labels.append(name, state);
 
     root.append(icon, labels);
-    return { root, icon, name, state, iconTag: 'ha-icon' };
+    return { root, icon, name, state };
   },
 
   view(button, { hass, stateObj, active, resolve }) {
@@ -231,6 +232,7 @@ export const buttonType: ItemType<ButtonItem, ButtonParts, ButtonView> = {
 
     return {
       icon,
+      picture: resolvePicture(button, stateObj, resolve),
       name,
       secondary,
       animate: animationActive(button.animation, stateObj, active),
@@ -239,8 +241,6 @@ export const buttonType: ItemType<ButtonItem, ButtonParts, ButtonView> = {
   },
 
   paint(parts, button, view, context) {
-    renderIcon(parts, view, context);
-
     const showName = view.showName !== false && !!view.name;
     parts.name.textContent = showName ? view.name : '';
     parts.name.style.display = showName ? '' : 'none';
@@ -259,6 +259,8 @@ export const buttonType: ItemType<ButtonItem, ButtonParts, ButtonView> = {
       parts.icon.style.removeProperty('--tsr-anim-d');
       parts.icon.style.removeProperty('--tsr-anim-i');
     }
+    // After the classes above: a swapped element takes them over.
+    paintIcon(parts, 'icon', view, context, 'mdi:card-outline');
 
     const label = [view.name, view.secondary].filter(Boolean).join(', ');
     parts.root.setAttribute('aria-label', label || 'Button');
@@ -275,28 +277,3 @@ export const buttonType: ItemType<ButtonItem, ButtonParts, ButtonView> = {
 
   editor: buttonEditor,
 };
-
-/**
- * Swap between <ha-icon> and <ha-state-icon> only when the kind actually
- * changes - element creation is the expensive part of an update.
- */
-function renderIcon(parts: ButtonParts, view: ButtonView, context: SyncContext): void {
-  const wantsStateIcon = !view.icon && !!context.stateObj;
-  const wantedTag = wantsStateIcon ? 'ha-state-icon' : 'ha-icon';
-
-  if (parts.iconTag !== wantedTag) {
-    const next = document.createElement(wantedTag) as ButtonParts['icon'];
-    next.className = parts.icon.className;
-    parts.icon.replaceWith(next);
-    parts.icon = next;
-    parts.iconTag = wantedTag;
-  }
-
-  if (wantsStateIcon) {
-    parts.icon.hass = context.hass;
-    parts.icon.stateObj = context.stateObj;
-  } else {
-    const fallback = context.missing ? 'mdi:alert-circle-outline' : 'mdi:card-outline';
-    parts.icon.icon = view.icon || fallback;
-  }
-}

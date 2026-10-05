@@ -31,6 +31,7 @@ import { formatNumber } from '../../progress/format';
 import type { Dict, HassEntity, HomeAssistant, ItemBase } from '../../types';
 import { cssLength, isDict } from '../../utils';
 import { resolveIcon, resolveName } from '../button/button';
+import { paintIcon, resolvePicture, type IconElement } from '../icon';
 import type { CellParts, ItemType, SyncContext } from '../item-type';
 import { graphEditor } from './editor';
 import { GRAPH_STYLES } from './styles';
@@ -107,7 +108,7 @@ export interface GraphItem extends ItemBase {
 
 interface GraphParts extends CellParts {
   name: HTMLElement;
-  icon: HTMLElement & { icon?: string; hass?: HomeAssistant; stateObj?: HassEntity };
+  icon: IconElement;
   svg: SVGSVGElement;
   lines: Array<{ fill: SVGPathElement; line: SVGPathElement; fade: SVGLinearGradientElement }>;
   thresholds: SVGLinearGradientElement | null;
@@ -117,6 +118,7 @@ interface GraphView {
   name: string;
   showName: boolean;
   icon: string | null;
+  picture: string | null;
   line: string;
   paths: Array<{ line: string; fill: string }>;
   stops: Stop[] | null;
@@ -381,6 +383,7 @@ function graphView(item: GraphItem, context: SyncContext): GraphView {
     name,
     showName: item.show_name === false ? false : resolve(item.show_name) !== false,
     icon: resolveIcon(item, stateObj, resolve),
+    picture: resolvePicture(item, stateObj, resolve),
     line,
     paths,
     stops:
@@ -520,21 +523,7 @@ export const graphType: ItemType<GraphItem, GraphParts, GraphView> = {
   },
 
   paint(parts, _item, view, context) {
-    const wantsState = !view.icon && !!context.stateObj;
-    const tag = wantsState ? 'ha-state-icon' : 'ha-icon';
-    if (parts.icon.tagName.toLowerCase() !== tag) {
-      const next = document.createElement(tag) as GraphParts['icon'];
-      next.className = parts.icon.className;
-      parts.icon.replaceWith(next);
-      parts.icon = next;
-    }
-    if (wantsState) {
-      parts.icon.hass = context.hass;
-      parts.icon.stateObj = context.stateObj;
-    } else {
-      parts.icon.icon =
-        view.icon || (context.missing ? 'mdi:alert-circle-outline' : 'mdi:chart-line');
-    }
+    paintIcon(parts, 'icon', view, context, 'mdi:chart-line');
 
     parts.root.classList.toggle('drawing-off', !view.showDrawing);
     setText(parts.name, view.showName ? view.name : '');

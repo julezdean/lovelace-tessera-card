@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Pictures in place of the icon**: `show_entity_picture: true` shows the
+  item's `entity_picture` - a path such as `/local/icons/flag.svg` - or the
+  picture the entity brings, a person's photo or a media player's cover. The
+  keys are button-card's, so a config from there carries over. The icon is the
+  fallback when there is no picture or it does not load.
+
 ### Changed
 
 - An entity in the state `error` - a vacuum stuck somewhere - showed the

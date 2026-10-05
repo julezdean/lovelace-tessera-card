@@ -6,6 +6,8 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { normalizeConfig, cardFormData, cardFormToConfig, CARD_TAG } from '../src/main.ts';
+import { resolvePicture } from '../src/items/icon.ts';
+import { getItemType } from '../src/items/registry.ts';
 
 const one = (item, extra = {}) => normalizeConfig({ items: [item], ...extra }).items[0];
 
@@ -153,4 +155,65 @@ test('the item section edits all of them, and an untouched one writes nothing', 
   assert.equal(data.item.label_weight, 600);
   assert.equal(data.item.show_icon, true);
   assert.deepEqual(cardFormToConfig(config, data).item, { name_size: 16, label_weight: 600 });
+});
+
+/* -- entity_picture ------------------------------------------------------------ */
+
+test('a picture replaces the icon only when asked for, on every type', () => {
+  const config = normalizeConfig({
+    item: { show_entity_picture: true },
+    items: [
+      { entity: 'script.a', entity_picture: '/local/a.svg' },
+      { type: 'ring', entity: 'timer.a' },
+      { type: 'graph', entity: 'sensor.a', show_entity_picture: false },
+    ],
+  });
+  assert.deepEqual(
+    config.items.map((it) => [it.show_entity_picture, it.entity_picture]),
+    [
+      [true, '/local/a.svg'],
+      [true, null],
+      [false, null],
+    ],
+  );
+  assert.equal(one({ entity_picture: '/local/a.svg' }).show_entity_picture, false);
+});
+
+test('the item picture goes before the entity one, the local copy before the remote', () => {
+  const entity = {
+    entity_id: 'media_player.a',
+    state: 'playing',
+    attributes: { entity_picture: '/api/remote', entity_picture_local: '/api/local' },
+  };
+  const on = { show_entity_picture: true, entity_picture: null };
+  assert.equal(resolvePicture({ ...on, entity_picture: '/local/a.svg' }, entity), '/local/a.svg');
+  assert.equal(resolvePicture(on, entity), '/api/local');
+  assert.equal(
+    resolvePicture(on, { ...entity, attributes: { entity_picture: '/api/remote' } }),
+    '/api/remote',
+  );
+  assert.equal(resolvePicture(on, { ...entity, attributes: {} }), null);
+  assert.equal(resolvePicture({ show_entity_picture: false, entity_picture: '/local/a.svg' }, entity), null);
+  assert.equal(resolvePicture({ show_entity_picture: 'false', entity_picture: '/local/a.svg' }, entity), null);
+});
+
+test('the item section sets the picture switch, and leaving it off writes nothing', () => {
+  const config = { type: `custom:${CARD_TAG}`, items: [{}] };
+  const data = cardFormData(config);
+  assert.equal(data.item.show_entity_picture, false);
+  assert.equal(cardFormToConfig(config, data).item, undefined);
+  data.item.show_entity_picture = true;
+  assert.deepEqual(cardFormToConfig(config, data).item, { show_entity_picture: true });
+});
+
+test('a button form keeps its picture and drops an empty one', () => {
+  const config = { type: `custom:${CARD_TAG}`, items: [] };
+  const editor = getItemType('button').editor;
+  const button = { entity: 'script.a', show_entity_picture: true, entity_picture: '/local/a.svg' };
+  const form = editor.toForm(button, { config });
+  assert.equal(form.show_entity_picture, true);
+  assert.equal(form.entity_picture, '/local/a.svg');
+  assert.deepEqual(editor.fromForm(form, button, { config }), button);
+  const cleared = editor.fromForm({ ...form, show_entity_picture: false, entity_picture: '' }, button, { config });
+  assert.deepEqual(cleared, { entity: 'script.a' });
 });

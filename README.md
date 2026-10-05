@@ -344,6 +344,7 @@ items. A type's own defaults block (`button:`) may set them too and wins over
 | `icon_color` | CSS colour | secondary text | Inactive icon colour |
 | `show_name` | boolean | `true` | Show the name line |
 | `show_icon` | boolean | `true` | Show the icon. Without it the icon's room goes too, and the text moves to the middle |
+| `show_entity_picture` | boolean | `false` | Show a picture in place of the icon, see [Pictures](#pictures) |
 | `press_effect` | `scale` \| `fade` \| `none` | `scale` | Touch feedback |
 
 `button:` may carry them too, and wins over `item:` for buttons. The visual
@@ -373,6 +374,7 @@ switch the colour already says everything, so the extra line is left out. Set
 | `name` | string \| `false` | Label. Defaults to the entity's friendly name |
 | `label` | string | Secondary line when no state is shown |
 | `icon` | string \| map | See [Icons](#icons) |
+| `entity_picture` | string | Picture in place of the icon, with `show_entity_picture: true`. See [Pictures](#pictures) |
 | `entity` | string | Entity for state, colour and default actions |
 | `colspan` | number \| `full` | Slots this button occupies (default `1`); `full` spans the whole row |
 | `visibility` | list | Conditions under which the button is shown, see [Visibility](#visibility) |
@@ -422,7 +424,7 @@ number or a boolean. One embedded in text is substituted into it:
 
 Templated fields: `name`, `label`, `state_display`, `icon`, `style`,
 `color`, `active_color`, `icon_color`, `background`, `active_background`,
-`show_name`, `show_state`. Deliberately **not** templated: `entity` (it is what
+`show_name`, `show_state`, `show_icon`, `show_entity_picture`, `entity_picture`. Deliberately **not** templated: `entity` (it is what
 state tracking hangs on), `colspan` (it would rebuild the layout on every
 update) and the actions (structure, not appearance).
 
@@ -646,6 +648,31 @@ both spellings anyway, but quoting is clearer.
 
 Without an `icon`, the card renders `<ha-state-icon>`, so you get the same icon
 Home Assistant would pick for that entity.
+
+#### Pictures
+
+A picture can take the icon's place — your own SVG, a person's photo, a
+media player's cover. As in button-card, it needs `show_entity_picture: true`:
+
+```yaml
+- entity: script.spotify_macedonian_songs
+  name: Macedonian Songs
+  icon: mdi:spotify
+  show_entity_picture: true
+  entity_picture: /local/icons/flag_macedonia.svg
+```
+
+The picture is `entity_picture` if the item sets one, otherwise the one the
+entity brings (`entity_picture_local` first, which a media player serves
+itself). Without either — or if it does not load — the icon is shown, so
+`icon` is the fallback. Set `show_entity_picture: true` in `item:` and every
+person on the card shows their photo.
+
+The picture sits in the icon's box at `icon_size`, fitted rather than
+cropped, and keeps its own colours: `icon_color` and the active accent colour
+a glyph, which a picture is not. The cell's outline still shows that it is
+active. It works wherever an icon is shown: on a button, beside a graph, on a
+bar, and in a ring or digits that show the icon.
 
 ### Animations
 

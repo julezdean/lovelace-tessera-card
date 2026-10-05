@@ -44,6 +44,7 @@ export const DEFAULT_ITEM: Dict = {
   icon_color: null,
   show_name: true,
   show_icon: true,
+  show_entity_picture: false,
   press_effect: 'scale', // scale | fade | none
 };
 
@@ -60,6 +61,8 @@ const ITEM_TEMPLATED_FIELDS = [
   'active_when',
   'show_drawing',
   'show_icon',
+  'show_entity_picture',
+  'entity_picture',
 ];
 
 /**
@@ -155,6 +158,9 @@ function normalizeItem(
     label_size: src.label_size ?? defaults.label_size,
     label_weight: src.label_weight ?? defaults.label_weight,
     show_icon: src.show_icon ?? defaults.show_icon,
+    show_entity_picture: src.show_entity_picture ?? defaults.show_entity_picture,
+    // The item's own: one picture for every item of a card would make no sense.
+    entity_picture: src.entity_picture ?? null,
     icon_size: src.icon_size ?? defaults.icon_size,
     icon_color: src.icon_color ?? defaults.icon_color,
     press_effect: (src.press_effect ?? defaults.press_effect) as string,

@@ -12,6 +12,7 @@ import {
   LABELS,
   LAYOUT_SELECT,
   PRESS_EFFECT_SELECT,
+  SHOW_ENTITY_PICTURE_FIELD,
   SHOW_ICON_FIELD,
   SIZE_FIELDS,
   select,
@@ -94,6 +95,7 @@ const cardSchema = (mode: string) => [
       { name: 'active_color', selector: { text: {} } },
       { name: 'show_name', selector: { boolean: {} } },
       SHOW_ICON_FIELD,
+      SHOW_ENTITY_PICTURE_FIELD,
       PRESS_EFFECT_SELECT,
       // Only buttons arrange icon and text either way; it is stored under
       // `button:`, but belongs with the rest of how an item looks.
@@ -121,6 +123,8 @@ const SHARED_KEYS = [
   'label',
   'show_name',
   'show_icon',
+  'show_entity_picture',
+  'entity_picture',
   'name_size',
   'name_weight',
   'label_weight',
